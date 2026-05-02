@@ -4,6 +4,8 @@ import { pool } from '../config/database';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
 import { ValidationError, NotFoundError } from '../utils/errors';
+import { invoiceQueue } from '../config/queue';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -254,6 +256,52 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
     }
 
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/submit', async (req: AuthRequest, res, next) => {
+  try {
+    // Validate invoice can be submitted
+    const result = await pool.query(
+      `SELECT id, status FROM invoices
+       WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+      [req.params.id, req.tenantId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    const invoice = result.rows[0];
+
+    if (invoice.status !== 'draft' && invoice.status !== 'validated') {
+      throw new ValidationError('Invoice cannot be submitted in current status');
+    }
+
+    // Update status to validated
+    await pool.query(
+      `UPDATE invoices SET status = 'validated' WHERE id = $1`,
+      [req.params.id]
+    );
+
+    // Queue submission job
+    const job = await invoiceQueue.add({
+      invoiceId: req.params.id,
+      tenantId: req.tenantId,
+    });
+
+    logger.info('Invoice submission queued', {
+      invoiceId: req.params.id,
+      jobId: job.id,
+    });
+
+    res.json({
+      message: 'Invoice submission queued',
+      job_id: job.id,
+      status: 'validated',
+    });
   } catch (error) {
     next(error);
   }
