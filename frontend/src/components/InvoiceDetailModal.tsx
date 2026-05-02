@@ -48,7 +48,6 @@ interface InvoiceDetailModalProps {
 export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: InvoiceDetailModalProps) {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // @ts-expect-error - Placeholder component, will be implemented in subsequent tasks
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -66,16 +65,62 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
     }
   };
 
+  const handleSubmit = async () => {
+    if (!confirm('确认提交此发票到 MyInvois IRB？\n提交后将无法撤销。')) return;
+
+    try {
+      await irbApi.submitInvoice(invoiceId);
+      alert('发票已成功提交到 IRB！');
+      await loadInvoice();
+      onUpdate();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || '提交失败';
+
+      if (errorMsg.includes('credentials not configured')) {
+        alert('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
+      } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+        alert('网络连接失败，请稍后重试');
+      } else {
+        alert(`提交失败：${errorMsg}`);
+      }
+    }
+  };
+
+  const handleRefreshStatus = async () => {
+    if (!invoice?.lhdn_submission_uid) return;
+
+    setIsRefreshing(true);
+    try {
+      const response = await irbApi.getStatus(invoiceId);
+      const newStatus = response.data.status;
+      const currentStatus = invoice.status;
+
+      if (newStatus !== currentStatus) {
+        alert(`状态已更新为：${newStatus}`);
+      } else {
+        alert(`状态无变化，仍为：${currentStatus}`);
+      }
+
+      await loadInvoice();
+      onUpdate();
+    } catch (error: any) {
+      alert('无法获取最新状态，请稍后重试');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Placeholder for hooks and handlers - suppress unused parameter warnings
   void onClose;
-  void onUpdate;
+  void handleSubmit;
+  void handleRefreshStatus;
+  void isRefreshing;
   void motion;
   void ArrowLeft;
   void Send;
   void RefreshCw;
   void X;
   void Clock;
-  void irbApi;
 
   if (isLoading || !invoice) {
     return (
