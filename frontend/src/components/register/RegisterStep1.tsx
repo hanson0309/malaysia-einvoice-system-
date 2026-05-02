@@ -25,7 +25,7 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     } else if (formData.email.length > 100) {
       newErrors.email = 'Email must be 100 characters or less';
@@ -49,6 +49,17 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleInputChange = (field: string, value: string) => {
+    onChange(field, value);
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
   const handleNext = () => {
     if (validate()) {
       onNext();
@@ -68,12 +79,12 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
             className="form-input"
             placeholder="Your Company Ltd"
             value={formData.company_name}
-            onChange={(e) => onChange('company_name', e.target.value)}
+            onChange={(e) => handleInputChange('company_name', e.target.value)}
           />
           <div className="input-underline"></div>
         </div>
         {errors.company_name && (
-          <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <div className="field-error">
             {errors.company_name}
           </div>
         )}
@@ -90,12 +101,12 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
             className="form-input"
             placeholder="you@example.com"
             value={formData.email}
-            onChange={(e) => onChange('email', e.target.value)}
+            onChange={(e) => handleInputChange('email', e.target.value)}
           />
           <div className="input-underline"></div>
         </div>
         {errors.email && (
-          <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <div className="field-error">
             {errors.email}
           </div>
         )}
@@ -112,12 +123,12 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
             className="form-input"
             placeholder="••••••••"
             value={formData.password}
-            onChange={(e) => onChange('password', e.target.value)}
+            onChange={(e) => handleInputChange('password', e.target.value)}
           />
           <div className="input-underline"></div>
         </div>
         {errors.password && (
-          <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <div className="field-error">
             {errors.password}
           </div>
         )}
@@ -134,12 +145,12 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
             className="form-input"
             placeholder="••••••••"
             value={formData.confirmPassword}
-            onChange={(e) => onChange('confirmPassword', e.target.value)}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
           />
           <div className="input-underline"></div>
         </div>
         {errors.confirmPassword && (
-          <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <div className="field-error">
             {errors.confirmPassword}
           </div>
         )}

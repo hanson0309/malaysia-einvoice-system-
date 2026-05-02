@@ -205,6 +205,12 @@
   font-size: 0.875rem;
 }
 
+.field-error {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
 .form-group {
   margin-bottom: 2rem;
 }
