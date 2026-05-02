@@ -132,25 +132,37 @@ The application will be available at:
 
 **Backend (.env)**
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/einvoice
+# Server
+NODE_ENV=development
+PORT=3000
 
-# Authentication
-JWT_SECRET=your-jwt-secret-here
-JWT_REFRESH_SECRET=your-refresh-secret-here
-ENCRYPTION_KEY=your-32-char-encryption-key
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://postgres:password@localhost:5432/einvoice
+
+# Authentication (Generate with: openssl rand -base64 32)
+JWT_SECRET=your-generated-jwt-secret-here
+JWT_REFRESH_SECRET=your-generated-refresh-secret-here
+
+# Encryption (Generate with: openssl rand -hex 16)
+ENCRYPTION_KEY=your-32-character-encryption-key
 
 # MyInvois API
 MYINVOIS_BASE_URL=https://api.myinvois.hasil.gov.my
 
-# Redis
+# Frontend (for CORS)
+FRONTEND_URL=http://localhost:5173
+
+# Redis (required for job queue)
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# Server
-PORT=3000
-NODE_ENV=development
+REDIS_PASSWORD=
 ```
+
+**Important Notes:**
+- Replace `postgres:password` with your actual PostgreSQL credentials
+- Generate secure secrets using the OpenSSL commands provided
+- Ensure PostgreSQL and Redis are running before starting the backend
+- The ENCRYPTION_KEY must be exactly 32 characters
 
 ## 🎨 UI Features
 
