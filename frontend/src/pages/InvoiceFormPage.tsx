@@ -8,8 +8,9 @@ interface LineItem {
   product: string;
   description: string;
   quantity: number;
-  unitPrice: number;
-  taxRate: number;
+  unit_price: number;
+  tax_type: 'SST' | 'E' | 'Z' | 'SR';
+  tax_rate: number;
   amount: number;
 }
 
@@ -18,12 +19,18 @@ export default function InvoiceFormPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    customer: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
+    invoice_number: '',
+    invoice_type: '01' as '01' | '02' | '03' | '04',
+    customer_id: '',
+    issue_date: new Date().toISOString().split('T')[0],
+    due_date: '',
+    currency: 'MYR',
+    exchange_rate: 1.0,
+    payment_method: '' as 'cash' | 'bank_transfer' | 'card' | 'ewallet' | '',
+    payment_terms: '',
   });
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { product: '', description: '', quantity: 1, unitPrice: 0, taxRate: 6, amount: 0 },
+    { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,12 +41,27 @@ export default function InvoiceFormPage() {
 
   const loadData = async () => {
     try {
+      console.log('Loading customers and products...');
       const [customersRes, productsRes] = await Promise.all([
         customerApi.getAll(),
         productApi.getAll(),
       ]);
-      setCustomers(Array.isArray(customersRes.data) ? customersRes.data : []);
-      setProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
+      console.log('Customers response:', customersRes.data);
+      console.log('Products response:', productsRes.data);
+
+      // Handle nested data structure from backend
+      const customersData = Array.isArray(customersRes.data)
+        ? customersRes.data
+        : customersRes.data?.data || [];
+      const productsData = Array.isArray(productsRes.data)
+        ? productsRes.data
+        : productsRes.data?.data || [];
+
+      console.log('Parsed customers:', customersData);
+      console.log('Parsed products:', productsData);
+
+      setCustomers(customersData);
+      setProducts(productsData);
     } catch (error) {
       console.error('Failed to load data:', error);
       setCustomers([]);
@@ -55,7 +77,7 @@ export default function InvoiceFormPage() {
         ...newItems[index],
         product: productId,
         description: product.name,
-        unitPrice: product.price,
+        unit_price: product.price,
         amount: product.price * newItems[index].quantity,
       };
       setLineItems(newItems);
@@ -66,8 +88,8 @@ export default function InvoiceFormPage() {
     const newItems = [...lineItems];
     newItems[index] = { ...newItems[index], [field]: value };
 
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
+    if (field === 'quantity' || field === 'unit_price') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].unit_price;
     }
 
     setLineItems(newItems);
@@ -76,7 +98,7 @@ export default function InvoiceFormPage() {
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
-      { product: '', description: '', quantity: 1, unitPrice: 0, taxRate: 6, amount: 0 },
+      { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
     ]);
   };
 
@@ -88,7 +110,7 @@ export default function InvoiceFormPage() {
 
   const calculateTotals = () => {
     const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-    const tax = lineItems.reduce((sum, item) => sum + (item.amount * item.taxRate / 100), 0);
+    const tax = lineItems.reduce((sum, item) => sum + (item.amount * item.tax_rate / 100), 0);
     const total = subtotal + tax;
     return { subtotal, tax, total };
   };
@@ -101,17 +123,33 @@ export default function InvoiceFormPage() {
     try {
       const { subtotal, tax, total } = calculateTotals();
 
-      await invoiceApi.create({
-        ...formData,
-        items: lineItems,
-        subtotal,
-        taxAmount: tax,
-        totalAmount: total,
-      });
+      // Map frontend data to backend API format
+      const invoiceData = {
+        invoice_number: formData.invoice_number,
+        invoice_type: formData.invoice_type,
+        customer_id: formData.customer_id,
+        issue_date: formData.issue_date,
+        due_date: formData.due_date || undefined,
+        currency: formData.currency,
+        exchange_rate: formData.exchange_rate,
+        payment_method: formData.payment_method || undefined,
+        payment_terms: formData.payment_terms || undefined,
+        items: lineItems.map(item => ({
+          product_id: item.product || undefined,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_type: item.tax_type,
+          tax_rate: item.tax_rate,
+        })),
+      };
 
+      console.log('Submitting invoice:', invoiceData);
+      await invoiceApi.create(invoiceData);
       navigate('/dashboard/invoices');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create invoice');
+      console.error('Invoice creation error:', err.response?.data);
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to create invoice');
     } finally {
       setIsLoading(false);
     }
@@ -223,14 +261,41 @@ export default function InvoiceFormPage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Customer and Date */}
+          {/* Invoice Details */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div>
+              <label style={labelStyle}>Invoice Number *</label>
+              <input
+                type="text"
+                required
+                value={formData.invoice_number}
+                onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                style={inputStyle}
+                placeholder="INV-2026-001"
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Invoice Type *</label>
+              <select
+                required
+                value={formData.invoice_type}
+                onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as any })}
+                style={inputStyle}
+              >
+                <option value="01">01 - Invoice</option>
+                <option value="02">02 - Credit Note</option>
+                <option value="03">03 - Debit Note</option>
+                <option value="04">04 - Refund Note</option>
+              </select>
+            </div>
+
             <div>
               <label style={labelStyle}>Customer *</label>
               <select
                 required
-                value={formData.customer}
-                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                value={formData.customer_id}
+                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
                 style={inputStyle}
               >
                 <option value="">Select customer</option>
@@ -247,10 +312,35 @@ export default function InvoiceFormPage() {
               <input
                 type="date"
                 required
-                value={formData.issueDate}
-                onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
+                value={formData.issue_date}
+                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
                 style={inputStyle}
               />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Due Date</label>
+              <input
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Payment Method</label>
+              <select
+                value={formData.payment_method}
+                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
+                style={inputStyle}
+              >
+                <option value="">Select payment method</option>
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="card">Card</option>
+                <option value="ewallet">E-Wallet</option>
+              </select>
             </div>
           </div>
 
@@ -324,7 +414,7 @@ export default function InvoiceFormPage() {
                     </motion.button>
                   )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '1rem', paddingRight: lineItems.length > 1 ? '3rem' : '0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr 1fr', gap: '1rem', paddingRight: lineItems.length > 1 ? '3rem' : '0' }}>
                     <div>
                       <label style={labelStyle}>Product</label>
                       <select
@@ -339,6 +429,18 @@ export default function InvoiceFormPage() {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Description *</label>
+                      <input
+                        type="text"
+                        required
+                        value={item.description}
+                        onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                        style={inputStyle}
+                        placeholder="Item description"
+                      />
                     </div>
 
                     <div>
@@ -358,10 +460,25 @@ export default function InvoiceFormPage() {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={item.unitPrice}
-                        onChange={(e) => handleLineItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                        value={item.unit_price}
+                        onChange={(e) => handleLineItemChange(index, 'unit_price', parseFloat(e.target.value))}
                         style={inputStyle}
                       />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Tax Type *</label>
+                      <select
+                        required
+                        value={item.tax_type}
+                        onChange={(e) => handleLineItemChange(index, 'tax_type', e.target.value)}
+                        style={inputStyle}
+                      >
+                        <option value="SST">SST</option>
+                        <option value="E">Exempt</option>
+                        <option value="Z">Zero Rated</option>
+                        <option value="SR">Standard Rated</option>
+                      </select>
                     </div>
 
                     <div>
@@ -371,8 +488,8 @@ export default function InvoiceFormPage() {
                         step="0.01"
                         min="0"
                         max="100"
-                        value={item.taxRate}
-                        onChange={(e) => handleLineItemChange(index, 'taxRate', parseFloat(e.target.value))}
+                        value={item.tax_rate}
+                        onChange={(e) => handleLineItemChange(index, 'tax_rate', parseFloat(e.target.value))}
                         style={inputStyle}
                       />
                     </div>

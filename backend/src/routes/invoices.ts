@@ -38,6 +38,7 @@ const invoiceSchema = z.object({
 
 router.post('/', async (req: AuthRequest, res, next) => {
   try {
+    console.log('Received invoice data:', JSON.stringify(req.body, null, 2));
     const data = invoiceSchema.parse(req.body);
 
     // Calculate totals
@@ -87,7 +88,9 @@ router.post('/', async (req: AuthRequest, res, next) => {
     res.status(201).json(invoice);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', undefined, error.issues));
+      console.error('Invoice validation errors:', JSON.stringify(error.issues, null, 2));
+      const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+      next(new ValidationError(`Validation failed: ${errorMessages}`, undefined, error.issues));
     } else {
       next(error);
     }
