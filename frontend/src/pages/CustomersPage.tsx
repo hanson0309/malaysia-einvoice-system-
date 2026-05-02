@@ -25,8 +25,13 @@ export default function CustomersPage() {
 
   const loadCustomers = async () => {
     try {
+      console.log('Loading customers...');
       const response = await customerApi.getAll();
-      setCustomers(Array.isArray(response.data) ? response.data : []);
+      console.log('API response:', response);
+      console.log('Response data:', response.data);
+      const customersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      console.log('Customers array:', customersData);
+      setCustomers(customersData);
     } catch (error) {
       console.error('Failed to load customers:', error);
       setCustomers([]);

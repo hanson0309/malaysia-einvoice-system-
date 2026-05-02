@@ -63,7 +63,8 @@ router.post('/', async (req: AuthRequest, res, next) => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('Zod validation errors:', JSON.stringify(error.issues, null, 2));
-      next(new ValidationError('Validation failed', undefined, error.issues));
+      const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+      next(new ValidationError(`Validation failed: ${errorMessages}`, undefined, error.issues));
     } else {
       next(error);
     }
