@@ -1,7 +1,8 @@
 import { Job } from 'bull';
-import { pool } from '../config/database';
-import { MyInvoisClient, buildMyInvoisPayload } from '../services/myinvois';
+import { MyInvoisClient } from '../services/myinvois';
 import { logger } from '../utils/logger';
+import { Invoice, Customer, Tenant } from '../models';
+import { config } from '../config/env';
 
 export async function processInvoiceSubmission(job: Job) {
   const { invoiceId, tenantId } = job.data;
@@ -9,97 +10,89 @@ export async function processInvoiceSubmission(job: Job) {
   logger.info('Processing invoice submission', { invoiceId, tenantId, attempt: job.attemptsMade });
 
   try {
-    // Build MyInvois payload
-    const payload = await buildMyInvoisPayload(invoiceId, tenantId);
+    // Fetch invoice with customer
+    const invoice = await Invoice.findById(invoiceId).populate('customer_id');
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    const customer = await Customer.findById(invoice.customer_id);
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) {
+      throw new Error('Tenant not found');
+    }
 
     // Submit to MyInvois
-    const client = new MyInvoisClient(tenantId);
-    const result = await client.submitInvoice(payload);
+    const client = new MyInvoisClient(tenantId, {
+      clientId: tenant.myinvois_client_id || '',
+      clientSecret: tenant.myinvois_client_secret || '',
+      baseUrl: config.MYINVOIS_BASE_URL,
+      tokenUrl: `${config.MYINVOIS_BASE_URL}/connect/token`,
+    });
 
-    // Update invoice with success
-    await pool.query(
-      `UPDATE invoices SET
-        status = 'submitted',
-        lhdn_submission_uid = $1,
-        lhdn_validation_code = $2,
-        lhdn_qr_code = $3,
-        lhdn_digital_signature = $4,
-        lhdn_submitted_at = NOW(),
-        lhdn_error_message = NULL,
-        lhdn_error_code = NULL,
-        retry_count = 0,
-        next_retry_at = NULL
-      WHERE id = $5`,
-      [
-        result.submission_uid,
-        result.validation_code,
-        result.qr_code,
-        result.digital_signature,
+    const result = await client.submitInvoice(invoice, customer, tenant);
+
+    // Check if submission was accepted
+    if (result.acceptedDocuments && result.acceptedDocuments.length > 0) {
+      const accepted = result.acceptedDocuments[0];
+
+      // Update invoice with success
+      invoice.status = 'submitted';
+      invoice.lhdn_submission_uid = result.submissionUid;
+      invoice.lhdn_validation_code = accepted.invoiceCodeNumber;
+      invoice.lhdn_submitted_at = new Date();
+      invoice.lhdn_error_message = undefined;
+      invoice.lhdn_error_code = undefined;
+      invoice.retry_count = 0;
+      invoice.next_retry_at = undefined;
+      await invoice.save();
+
+      logger.info('Invoice submitted successfully', {
         invoiceId,
-      ]
-    );
+        submission_uid: result.submissionUid
+      });
 
-    // Log success
-    await pool.query(
-      `INSERT INTO submission_logs (
-        tenant_id, invoice_id, submission_type, request_payload, response_payload,
-        http_status_code, status, retryable
-      ) VALUES ($1, $2, 'realtime', $3, $4, 200, 'success', false)`,
-      [tenantId, invoiceId, payload, result]
-    );
+      return { success: true, submission_uid: result.submissionUid };
+    } else if (result.rejectedDocuments && result.rejectedDocuments.length > 0) {
+      const rejected = result.rejectedDocuments[0];
+      throw new Error(`Invoice rejected: ${rejected.error.message}`);
+    }
 
-    logger.info('Invoice submitted successfully', { invoiceId, submission_uid: result.submission_uid });
-
-    return { success: true, submission_uid: result.submission_uid };
   } catch (error: any) {
     logger.error('Invoice submission failed', { invoiceId, error: error.message });
 
-    const retryable = error.details?.retryable || false;
+    const retryable = MyInvoisClient.isRetryable(error.code);
     const errorCode = error.code || 'UNKNOWN_ERROR';
     const errorMessage = error.message;
 
-    // Log failure
-    await pool.query(
-      `INSERT INTO submission_logs (
-        tenant_id, invoice_id, submission_type, request_payload, response_payload,
-        http_status_code, status, error_code, retryable
-      ) VALUES ($1, $2, 'realtime', $3, $4, $5, $6, $7)`,
-      [
-        tenantId,
-        invoiceId,
-        {},
-        error.details || {},
-        error.response?.status || 0,
-        errorCode,
-        retryable,
-      ]
-    );
-
     // Update invoice with error
-    const retryCount = job.attemptsMade;
-    const nextRetryAt = retryable && retryCount < 6
-      ? new Date(Date.now() + Math.pow(2, retryCount) * 60000) // Exponential backoff
-      : null;
+    const invoice = await Invoice.findById(invoiceId);
+    if (invoice) {
+      const retryCount = job.attemptsMade;
+      const nextRetryAt = retryable && retryCount < 6
+        ? new Date(Date.now() + Math.pow(2, retryCount) * 60000) // Exponential backoff
+        : undefined;
 
-    await pool.query(
-      `UPDATE invoices SET
-        lhdn_error_message = $1,
-        lhdn_error_code = $2,
-        retry_count = $3,
-        next_retry_at = $4
-      WHERE id = $5`,
-      [errorMessage, errorCode, retryCount, nextRetryAt, invoiceId]
-    );
+      invoice.lhdn_error_message = errorMessage;
+      invoice.lhdn_error_code = errorCode;
+      invoice.retry_count = retryCount;
+      invoice.next_retry_at = nextRetryAt;
 
-    if (retryable && retryCount < 6) {
+      if (!retryable || retryCount >= 6) {
+        // Mark as permanently failed
+        invoice.status = 'rejected';
+        logger.error('Invoice submission permanently failed', { invoiceId, retryCount });
+      }
+
+      await invoice.save();
+    }
+
+    if (retryable && job.attemptsMade < 6) {
       throw error; // Let Bull retry
-    } else {
-      // Mark as permanently failed
-      await pool.query(
-        `UPDATE invoices SET status = 'rejected' WHERE id = $1`,
-        [invoiceId]
-      );
-      logger.error('Invoice submission permanently failed', { invoiceId, retryCount });
     }
   }
 }

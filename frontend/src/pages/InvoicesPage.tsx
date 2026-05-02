@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Eye, Edit2, Trash2, Search, FileText, Filter, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi } from '../lib/api';
-import '../styles/dashboard.css';
 
 interface Invoice {
   id: string;
@@ -28,8 +27,8 @@ export default function InvoicesPage() {
     try {
       setLoading(true);
       const response = await invoiceApi.getAll();
-      // Map API response to our interface
-      const mappedInvoices = response.data.map((inv: any) => ({
+      const data = Array.isArray(response.data) ? response.data : [];
+      const mappedInvoices = data.map((inv: any) => ({
         id: inv._id,
         invoiceNumber: inv.invoiceNumber,
         customerName: inv.customer?.name || 'Unknown',
@@ -86,7 +85,6 @@ export default function InvoicesPage() {
     }).format(new Date(dateString));
   };
 
-  // Filter invoices by search query AND status
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch =
       invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -97,156 +95,475 @@ export default function InvoicesPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const getStatusColor = (status: string) => {
+    const colors = {
+      draft: { bg: 'rgba(148, 163, 184, 0.2)', text: '#94a3b8', border: 'rgba(148, 163, 184, 0.3)' },
+      submitted: { bg: 'rgba(59, 130, 246, 0.2)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
+      validated: { bg: 'rgba(16, 185, 129, 0.2)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
+      rejected: { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' }
+    };
+    return colors[status as keyof typeof colors] || colors.draft;
+  };
+
   if (loading) {
     return (
-      <div className="page-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading invoices...</p>
-        </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh'
+      }}>
+        <motion.div
+          style={{ position: 'relative' }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            style={{
+              width: '48px',
+              height: '48px',
+              border: '4px solid rgba(139, 92, 246, 0.3)',
+              borderTopColor: '#8b5cf6',
+              borderRadius: '50%'
+            }}
+          />
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="page-container">
-      {/* Page Header */}
+    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Header */}
       <motion.div
-        className="page-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.6 }}
+        style={{ marginBottom: '2rem' }}
       >
-        <div>
-          <h1 className="page-title">Invoices</h1>
-          <p className="page-subtitle">Manage and track all your invoices</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <div style={{
+            padding: '0.5rem',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(234, 88, 12, 0.2) 100%)',
+            borderRadius: '0.75rem'
+          }}>
+            <FileText style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+          </div>
+          <div>
+            <h1 style={{
+              fontSize: '2.25rem',
+              fontWeight: 700,
+              color: '#f1f5f9',
+              marginBottom: '0.25rem'
+            }}>
+              Invoices
+            </h1>
+            <p style={{ fontSize: '1rem', color: '#94a3b8' }}>
+              Manage and track all your invoices
+            </p>
+          </div>
         </div>
       </motion.div>
 
-      {/* Table Container */}
+      {/* Filters and Actions */}
       <motion.div
-        className="table-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}
       >
-        {/* Table Header with Filters */}
-        <div className="table-header">
-          <div className="table-filters">
-            {/* Status Filter Dropdown */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="submitted">Submitted</option>
-              <option value="validated">Validated</option>
-              <option value="rejected">Rejected</option>
-            </select>
-
-            {/* Search Input */}
-            <div className="search-input-wrapper">
-              <Search className="search-icon" size={18} />
-              <input
-                type="text"
-                placeholder="Search invoices..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-            </div>
-          </div>
-
-          {/* New Invoice Button */}
-          <Link to="/dashboard/invoices/new" className="btn-primary">
-            <Plus size={18} />
-            New Invoice
-          </Link>
+        {/* Status Filter */}
+        <div style={{ position: 'relative' }}>
+          <Filter style={{
+            position: 'absolute',
+            left: '1rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '18px',
+            height: '18px',
+            color: '#94a3b8',
+            pointerEvents: 'none'
+          }} />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              padding: '0.75rem 1rem 0.75rem 2.75rem',
+              background: 'rgba(30, 41, 59, 0.8)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '0.75rem',
+              color: '#f1f5f9',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              outline: 'none',
+              minWidth: '150px'
+            }}
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+            <option value="validated">Validated</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
 
-        {/* Data Table */}
-        {filteredInvoices.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📄</div>
-            <h3 className="empty-state-title">No invoices found</h3>
-            <p className="empty-state-description">
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Get started by creating your first invoice'}
-            </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <Link to="/dashboard/invoices/new" className="btn-primary" style={{ marginTop: '1rem' }}>
-                <Plus size={18} />
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
+          <Search style={{
+            position: 'absolute',
+            left: '1rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '18px',
+            height: '18px',
+            color: '#94a3b8',
+            pointerEvents: 'none'
+          }} />
+          <input
+            type="text"
+            placeholder="Search invoices..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem 0.75rem 2.75rem',
+              background: 'rgba(30, 41, 59, 0.8)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '0.75rem',
+              color: '#f1f5f9',
+              fontSize: '0.875rem',
+              outline: 'none'
+            }}
+          />
+        </div>
+
+        {/* New Invoice Button */}
+        <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
+          <motion.button
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+              border: 'none',
+              borderRadius: '0.75rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus style={{ width: '18px', height: '18px' }} />
+            New Invoice
+          </motion.button>
+        </Link>
+      </motion.div>
+
+      {/* Content */}
+      {filteredInvoices.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4rem 2rem',
+            background: 'rgba(30, 41, 59, 0.5)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(139, 92, 246, 0.2)',
+            borderRadius: '1.5rem',
+            minHeight: '400px'
+          }}
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            style={{
+              padding: '2rem',
+              background: 'rgba(245, 158, 11, 0.1)',
+              borderRadius: '50%',
+              marginBottom: '1.5rem'
+            }}
+          >
+            <FileText style={{ width: '64px', height: '64px', color: '#f59e0b' }} />
+          </motion.div>
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: '#f1f5f9',
+            marginBottom: '0.5rem'
+          }}>
+            No invoices found
+          </h3>
+          <p style={{
+            fontSize: '1rem',
+            color: '#94a3b8',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
+          }}>
+            {searchQuery || statusFilter !== 'all'
+              ? 'Try adjusting your filters'
+              : 'Get started by creating your first invoice'}
+          </p>
+          {!searchQuery && statusFilter === 'all' && (
+            <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
+              <motion.button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.875rem 1.75rem',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Plus style={{ width: '18px', height: '18px' }} />
                 Create Invoice
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="table-wrapper">
-            <table className="data-table">
+              </motion.button>
+            </Link>
+          )}
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{
+            background: 'rgba(30, 41, 59, 0.5)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(139, 92, 246, 0.2)',
+            borderRadius: '1.5rem',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse'
+            }}>
               <thead>
-                <tr>
-                  <th>Invoice Number</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
+                <tr style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Invoice Number
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Customer
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Date
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Amount
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Status
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
+                    textAlign: 'right',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((invoice, index) => (
-                  <motion.tr
-                    key={invoice.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.03 }}
-                  >
-                    <td className="font-medium">{invoice.invoiceNumber}</td>
-                    <td>{invoice.customerName}</td>
-                    <td className="text-muted">{formatDate(invoice.date)}</td>
-                    <td className="amount-cell">{formatPrice(invoice.total)}</td>
-                    <td>
-                      <span className={`status-badge status-${invoice.status}`}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <Link
-                          to={`/dashboard/invoices/${invoice.id}`}
-                          className="btn-icon"
-                          title="View invoice"
-                        >
-                          <Eye size={16} />
-                        </Link>
-                        {invoice.status === 'draft' && (
-                          <Link
-                            to={`/dashboard/invoices/${invoice.id}/edit`}
-                            className="btn-icon"
-                            title="Edit invoice"
-                          >
-                            <Edit2 size={16} />
+                {filteredInvoices.map((invoice, index) => {
+                  const statusColor = getStatusColor(invoice.status);
+                  return (
+                    <motion.tr
+                      key={invoice.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      style={{
+                        borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
+                        transition: 'background 0.2s'
+                      }}
+                      whileHover={{ background: 'rgba(139, 92, 246, 0.05)' }}
+                    >
+                      <td style={{
+                        padding: '1rem 1.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#f1f5f9'
+                      }}>
+                        {invoice.invoiceNumber}
+                      </td>
+                      <td style={{
+                        padding: '1rem 1.5rem',
+                        fontSize: '0.875rem',
+                        color: '#cbd5e1'
+                      }}>
+                        {invoice.customerName}
+                      </td>
+                      <td style={{
+                        padding: '1rem 1.5rem',
+                        fontSize: '0.875rem',
+                        color: '#94a3b8'
+                      }}>
+                        {formatDate(invoice.date)}
+                      </td>
+                      <td style={{
+                        padding: '1rem 1.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#f1f5f9'
+                      }}>
+                        {formatPrice(invoice.total)}
+                      </td>
+                      <td style={{ padding: '1rem 1.5rem' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '0.375rem 0.75rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          background: statusColor.bg,
+                          color: statusColor.text,
+                          border: `1px solid ${statusColor.border}`
+                        }}>
+                          {invoice.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.5rem' }}>
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          justifyContent: 'flex-end'
+                        }}>
+                          <Link to={`/dashboard/invoices/${invoice.id}`}>
+                            <motion.button
+                              style={{
+                                padding: '0.5rem',
+                                background: 'rgba(59, 130, 246, 0.1)',
+                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                borderRadius: '0.5rem',
+                                color: '#60a5fa',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              whileHover={{ scale: 1.1, background: 'rgba(59, 130, 246, 0.2)' }}
+                              whileTap={{ scale: 0.9 }}
+                              title="View"
+                            >
+                              <Eye style={{ width: '16px', height: '16px' }} />
+                            </motion.button>
                           </Link>
-                        )}
-                        <button
-                          onClick={() => handleDelete(invoice.id)}
-                          className="btn-icon btn-icon-danger"
-                          title="Delete invoice"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                          <motion.button
+                            onClick={() => handleDelete(invoice.id)}
+                            style={{
+                              padding: '0.5rem',
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              borderRadius: '0.5rem',
+                              color: '#f87171',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            whileHover={{ scale: 1.1, background: 'rgba(239, 68, 68, 0.2)' }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Delete"
+                          >
+                            <Trash2 style={{ width: '16px', height: '16px' }} />
+                          </motion.button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

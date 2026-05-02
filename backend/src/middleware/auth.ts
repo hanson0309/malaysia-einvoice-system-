@@ -4,6 +4,8 @@ import { config } from '../config/env';
 import { UnauthorizedError } from '../utils/errors';
 import { JWTPayload, AuthRequest } from '../types';
 
+export { AuthRequest } from '../types';
+
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -15,7 +17,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
     const token = authHeader.substring(7);
 
     try {
-      const decoded = jwt.verify(token, config.JWT_SECRET) as JWTPayload;
+      const decoded = jwt.verify(token, config.JWT_SECRET!) as JWTPayload;
       req.user = decoded;
       next();
     } catch (error) {

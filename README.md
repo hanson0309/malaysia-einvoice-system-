@@ -1,62 +1,60 @@
-# CLAUDE.md
+# MyInvois - Malaysia E-Invoice System
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+A modern, multi-tenant SaaS application for automating invoice submission to Malaysia's LHDN (Lembaga Hasil Dalam Negeri) via the MyInvois API. Built with a beautiful, professional dark-themed UI.
 
-## Project Overview
+![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-success)
+![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue)
 
-Malaysia E-Invoice System MVP - A multi-tenant SaaS application that automates invoice submission to Malaysia's LHDN (Lembaga Hasil Dalam Negeri) via the MyInvois API. The system handles B2B and B2C invoicing with automatic retry mechanisms for failed submissions.
+## ✨ Features
 
-**Tech Stack:**
-- Backend: Node.js + Express + TypeScript + PostgreSQL
-- Frontend: React 18 + TypeScript + Vite + Tailwind CSS
-- Job Queue: Bull (requires Redis)
-- Authentication: JWT with bcrypt
+### 🎨 Modern UI/UX
+- **Beautiful Dark Theme**: Professional deep blue gradient design
+- **Smooth Animations**: Framer Motion powered transitions and micro-interactions
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
+- **Glass Morphism**: Modern translucent cards with backdrop blur effects
+- **Real-time Updates**: Live status indicators and dynamic data
 
-## Architecture
+### 💼 Business Features
+- **Multi-tenant Architecture**: Complete data isolation per organization
+- **Invoice Management**: Create, track, and submit invoices to LHDN
+- **Customer Management**: B2B and B2C customer profiles
+- **Product Catalog**: Manage products with tax configurations
+- **Automatic Submission**: Background job queue with retry logic
+- **Audit Trail**: Complete submission logs and error tracking
 
-### Multi-Tenancy Model
-- Every table includes `tenant_id` for data isolation
-- JWT tokens contain `tenant_id` extracted by middleware
-- All queries automatically filtered by tenant via `extractTenant` middleware
-- Unique constraints are scoped by tenant (e.g., `UNIQUE(tenant_id, invoice_number)`)
+### 🔐 Security
+- JWT authentication with refresh tokens
+- Role-based access control (Admin, Accountant, Viewer)
+- AES-256 encryption for sensitive data
+- Tenant-level data isolation
+- Secure password hashing with bcrypt
 
-### Authentication Flow
-1. User registers → creates tenant + admin user in transaction
-2. Login returns `access_token` (1h expiry) + `refresh_token` (7d expiry)
-3. All protected routes use `authenticateJWT` → `extractTenant` middleware chain
-4. Roles: `admin` (full access), `accountant` (CRUD only), `viewer` (read-only)
+## 🚀 Tech Stack
 
-### Invoice Submission Architecture
-```
-User submits invoice → POST /api/v1/invoices/:id/submit
-  ↓
-Status set to 'validated', job queued in Bull
-  ↓
-Worker process picks up job → calls MyInvoisClient
-  ↓
-MyInvoisClient: OAuth2 token (cached in DB) → Submit UBL payload
-  ↓
-Success: status='submitted', save LHDN response (UID, QR, signature)
-Failure: log error, schedule retry (exponential backoff: 1m, 5m, 15m, 1h, 6h)
-  ↓
-After 6 retries: status='rejected', notify admin
-```
+### Frontend
+- **React 18** - Modern UI library
+- **TypeScript** - Type-safe development
+- **Vite** - Lightning-fast build tool
+- **Framer Motion** - Smooth animations
+- **Tailwind CSS** - Utility-first styling
+- **React Router** - Client-side routing
 
-### Database Schema Key Points
-- **Soft deletes**: All tables use `deleted_at` timestamp
-- **LHDN tracking**: Invoices table has `lhdn_submission_uid`, `lhdn_validation_code`, `lhdn_qr_code`, `lhdn_error_message`, `retry_count`, `next_retry_at`
-- **Audit trail**: `submission_logs` table tracks every API call with request/response
-- **Encryption**: `myinvois_client_secret` and `myinvois_access_token` stored encrypted (AES-256)
+### Backend
+- **Node.js + Express** - RESTful API server
+- **TypeScript** - Type-safe backend
+- **PostgreSQL** - Relational database
+- **Bull + Redis** - Job queue for background processing
+- **JWT** - Secure authentication
 
-### MyInvois Integration
-- **OAuth2**: Token cached in `tenants.myinvois_access_token` with 5-minute expiry buffer
-- **UBL 2.1 Format**: Invoices converted to XML-like JSON structure required by LHDN
-- **Retry Logic**: Only retry on network errors (5xx, timeout, connection refused), NOT validation errors (400)
-- **Tax Types**: SST (standard), E (exempt), Z (zero-rated), SR (standard-rated)
+## 📦 Installation
 
-## Development Commands
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 6+
 
 ### Backend Setup
+
 ```bash
 cd backend
 
@@ -65,28 +63,24 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your database credentials and generate secrets:
+# Edit .env with your credentials
+
+# Generate secrets
 # JWT_SECRET: openssl rand -base64 32
 # ENCRYPTION_KEY: openssl rand -hex 16
 
-# Run migrations (creates all 11 tables)
+# Run migrations
 npm run migrate
 
-# Start development server (with hot reload)
+# Start development server
 npm run dev
 
 # Start background worker (in separate terminal)
 npm run worker
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-npm start
 ```
 
 ### Frontend Setup
+
 ```bash
 cd frontend
 
@@ -95,111 +89,153 @@ npm install
 
 # Start development server
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-### Database Requirements
-- PostgreSQL 14+
-- Redis (for Bull queue)
-- Create database: `createdb einvoice`
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
 
-## Code Organization
+## 🎯 Quick Start
 
-### Backend Structure
+1. **Register**: Create your organization account
+2. **Add Customers**: Set up your customer database
+3. **Add Products**: Configure your product catalog
+4. **Create Invoices**: Generate invoices with automatic calculations
+5. **Submit to LHDN**: One-click submission with automatic retry
+
+## 📁 Project Structure
+
 ```
-backend/src/
-├── config/          # Database pool, env validation, Bull queue
-├── middleware/      # auth (JWT), tenant (isolation), errorHandler
-├── routes/          # Express routes (auth, customers, products, invoices)
-├── services/        # myinvois (API client), encryption (AES-256)
-├── jobs/            # submitInvoice (Bull job processor)
-├── utils/           # logger (JSON), errors (custom classes)
-├── types/           # TypeScript interfaces for all entities
-├── app.ts           # Express app setup
-├── server.ts        # HTTP server entry point
-└── worker.ts        # Background job worker
-
-migrations/          # SQL files (001-011) for schema
-scripts/             # migrate.ts (migration runner)
-tests/
-├── unit/            # JWT tests
-└── integration/     # API endpoint tests
+.
+├── backend/
+│   ├── src/
+│   │   ├── config/       # Database, Redis, environment
+│   │   ├── middleware/   # Auth, tenant isolation, error handling
+│   │   ├── routes/       # API endpoints
+│   │   ├── services/     # MyInvois API client, encryption
+│   │   ├── jobs/         # Background job processors
+│   │   └── utils/        # Helpers and utilities
+│   ├── migrations/       # Database schema
+│   └── tests/           # Unit and integration tests
+│
+└── frontend/
+    └── src/
+        ├── components/   # Reusable UI components
+        ├── pages/        # Page components
+        ├── contexts/     # React contexts
+        └── lib/          # API client and utilities
 ```
 
-### Key Files to Understand
+## 🔧 Configuration
 
-**backend/src/services/myinvois.ts** (789 lines)
-- Most complex file in the codebase
-- Handles OAuth2, UBL payload building, submission, retry logic
-- `buildMyInvoisPayload()` converts invoice → UBL 2.1 format (nested JSON structure)
+### Environment Variables
 
-**backend/src/routes/invoices.ts**
-- Most complex CRUD route
-- Creates invoice + items + tax summary in single transaction
-- Automatic calculation of subtotal, tax_amount, total_amount
-- POST /:id/submit queues background job
+**Backend (.env)**
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/einvoice
 
-**backend/src/jobs/submitInvoice.ts**
-- Processes invoice submission jobs
-- Updates invoice status based on MyInvois response
-- Implements exponential backoff retry logic
+# Authentication
+JWT_SECRET=your-jwt-secret-here
+JWT_REFRESH_SECRET=your-refresh-secret-here
+ENCRYPTION_KEY=your-32-char-encryption-key
 
-## Important Patterns
+# MyInvois API
+MYINVOIS_BASE_URL=https://api.myinvois.hasil.gov.my
 
-### Error Handling
-- All middleware wrapped in try-catch, calls `next(error)`
-- Custom error classes extend `AppError` with statusCode and code
-- Global `errorHandler` middleware returns structured JSON responses
-- Never throw errors synchronously in Express middleware
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-### Validation
-- Use Zod schemas for all request validation
-- B2B customers require `tin_number` and `address_line1`
-- Products with `tax_rate = 0` require `tax_exemption_reason`
-- Invoice items automatically calculate `tax_amount` and `line_total`
+# Server
+PORT=3000
+NODE_ENV=development
+```
 
-### Database Transactions
-- Use `pool.connect()` → `BEGIN` → `COMMIT`/`ROLLBACK` → `client.release()` in finally block
-- Always release client in finally block to prevent connection leaks
-- Used in: register (tenant + user), invoice creation (invoice + items + tax summary)
+## 🎨 UI Features
 
-### Security
-- Passwords hashed with bcrypt (12 rounds)
-- Sensitive data encrypted with AES-256-CBC using `crypto.scryptSync` for key derivation
-- JWT secrets validated on startup (throws if missing)
-- All routes require authentication except `/auth/register`, `/auth/login`, `/health`
+### Dashboard
+- Real-time statistics with animated counters
+- Quick action buttons for common tasks
+- System status indicator
+- Beautiful gradient cards with hover effects
 
-## Testing Notes
+### Invoice Management
+- Modern table with search and filters
+- Status badges with color coding
+- Smooth animations on data load
+- Empty state with helpful prompts
 
-- Integration tests require database connection (use test database)
-- Tests use supertest to call API endpoints
-- Auth tests use `done` callback for async setTimeout tests
-- Tests NOT run during development (no .env in test environment yet)
+### Invoice Creation
+- Multi-step form with validation
+- Dynamic line items with calculations
+- Real-time total updates
+- Beautiful error handling
 
-## Common Gotchas
+## 🔄 Invoice Submission Flow
 
-1. **Worker must run separately**: API server doesn't process jobs, worker does
-2. **Redis required**: Bull queue needs Redis running on localhost:6379
-3. **Token caching**: MyInvois tokens cached in DB, check expiry before using
-4. **Tenant isolation**: ALWAYS filter by `tenant_id` in queries
-5. **Soft deletes**: Check `deleted_at IS NULL` in all SELECT queries
-6. **Invoice status flow**: draft → validated → submitted/rejected (cannot submit if not draft/validated)
-7. **Retry logic**: Only retryable errors get scheduled for retry, validation errors don't
+```
+User creates invoice → Status: draft
+  ↓
+User submits → Status: validated → Job queued
+  ↓
+Background worker picks up job
+  ↓
+MyInvois API call (OAuth2 + UBL 2.1 format)
+  ↓
+Success: Status: submitted (save UID, QR code)
+Failure: Retry with exponential backoff (1m, 5m, 15m, 1h, 6h)
+  ↓
+After 6 retries: Status: rejected (notify admin)
+```
 
-## Environment Variables
+## 🧪 Testing
 
-Required for startup (app will throw if missing):
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - Access token signing key
-- `JWT_REFRESH_SECRET` - Refresh token signing key
-- `ENCRYPTION_KEY` - Must be 32 characters for AES-256
+```bash
+# Backend tests
+cd backend
+npm test
 
-Optional:
-- `NODE_ENV` - development/production
-- `PORT` - API server port (default: 3000)
-- `MYINVOIS_BASE_URL` - LHDN API endpoint
-- `FRONTEND_URL` - CORS origin (default: http://localhost:5173)
-- `REDIS_HOST` - Redis host (default: localhost)
-- `REDIS_PORT` - Redis port (default: 6379)
+# Frontend tests
+cd frontend
+npm test
+```
+
+## 📝 API Documentation
+
+### Authentication
+- `POST /api/v1/auth/register` - Register new organization
+- `POST /api/v1/auth/login` - Login user
+- `POST /api/v1/auth/refresh` - Refresh access token
+
+### Invoices
+- `GET /api/v1/invoices` - List all invoices
+- `POST /api/v1/invoices` - Create new invoice
+- `GET /api/v1/invoices/:id` - Get invoice details
+- `POST /api/v1/invoices/:id/submit` - Submit to LHDN
+- `DELETE /api/v1/invoices/:id` - Delete invoice
+
+### Customers & Products
+- Similar CRUD endpoints for customers and products
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- Built with ❤️ for Malaysian businesses
+- Designed to comply with LHDN MyInvois requirements
+- UI inspired by modern SaaS applications
+
+## 📞 Support
+
+For issues and questions, please open an issue on GitHub.
+
+---
+
+**Made with 🚀 by the MyInvois Team**

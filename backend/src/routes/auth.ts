@@ -3,10 +3,10 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { pool } from '../config/database';
 import { config } from '../config/env';
 import { ValidationError, UnauthorizedError, DuplicateError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { Tenant, User } from '../models';
 
 const router = Router();
 
@@ -37,101 +37,73 @@ router.post('/register', async (req, res, next) => {
     const data = registerSchema.parse(req.body);
 
     // Check if email already exists
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [data.email]
-    );
+    const existingUser = await User.findOne({ email: data.email });
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       throw new DuplicateError('Email already registered');
     }
 
     // Hash password
     const password_hash = await bcrypt.hash(data.password, 12);
 
-    // Start transaction
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+    // Create tenant
+    const tenant = await Tenant.create({
+      company_name: data.company_name,
+      company_registration_no: data.company_registration_no,
+      tin_number: data.tin_number,
+      sst_registration_no: data.sst_registration_no,
+      business_activity_code: data.business_activity_code,
+      address_line1: data.address_line1,
+      address_line2: data.address_line2,
+      city: data.city,
+      postcode: data.postcode,
+      state_code: data.state_code,
+      country_code: data.country_code,
+      email: data.email,
+      phone: data.phone,
+    });
 
-      // Create tenant
-      const tenantResult = await client.query(
-        `INSERT INTO tenants (
-          company_name, company_registration_no, tin_number, sst_registration_no,
-          business_activity_code, address_line1, address_line2, city, postcode,
-          state_code, country_code, email, phone
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING id`,
-        [
-          data.company_name,
-          data.company_registration_no,
-          data.tin_number,
-          data.sst_registration_no,
-          data.business_activity_code,
-          data.address_line1,
-          data.address_line2,
-          data.city,
-          data.postcode,
-          data.state_code,
-          data.country_code,
-          data.email,
-          data.phone,
-        ]
-      );
+    // Create admin user
+    const user = await User.create({
+      tenant_id: tenant._id,
+      email: data.email,
+      password_hash,
+      role: 'admin',
+    });
 
-      const tenant_id = tenantResult.rows[0].id;
+    // Generate tokens
+    const access_token = jwt.sign(
+      {
+        user_id: user._id.toString(),
+        tenant_id: tenant._id.toString(),
+        email: user.email,
+        role: user.role,
+      },
+      config.JWT_SECRET!,
+      { expiresIn: '1h' }
+    );
 
-      // Create admin user
-      const userResult = await client.query(
-        `INSERT INTO users (tenant_id, email, password_hash, role)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, email, role, created_at`,
-        [tenant_id, data.email, password_hash, 'admin']
-      );
+    const refresh_token = jwt.sign(
+      { user_id: user._id.toString() },
+      config.JWT_REFRESH_SECRET!,
+      { expiresIn: '7d' }
+    );
 
-      await client.query('COMMIT');
+    logger.info('New tenant registered', { tenant_id: tenant._id, email: data.email });
 
-      const user = userResult.rows[0];
-
-      // Generate tokens
-      const access_token = jwt.sign(
-        {
-          user_id: user.id,
-          tenant_id,
-          email: user.email,
-          role: user.role,
-        },
-        config.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
-
-      const refresh_token = jwt.sign(
-        { user_id: user.id },
-        config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      logger.info('New tenant registered', { tenant_id, email: data.email });
-
-      res.status(201).json({
-        access_token,
-        refresh_token,
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          tenant_id,
-        },
-      });
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    res.status(201).json({
+      access_token,
+      refresh_token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        tenant_id: tenant._id,
+      },
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', error.errors));
+      next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
     }
@@ -143,18 +115,14 @@ router.post('/login', async (req, res, next) => {
     const data = loginSchema.parse(req.body);
 
     // Find user
-    const result = await pool.query(
-      `SELECT u.id, u.tenant_id, u.email, u.password_hash, u.role
-       FROM users u
-       WHERE u.email = $1 AND u.deleted_at IS NULL`,
-      [data.email]
-    );
+    const user = await User.findOne({
+      email: data.email,
+      deleted_at: null,
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       throw new UnauthorizedError('Invalid email or password');
     }
-
-    const user = result.rows[0];
 
     // Verify password
     const isValid = await bcrypt.compare(data.password, user.password_hash);
@@ -165,28 +133,28 @@ router.post('/login', async (req, res, next) => {
     // Generate tokens
     const access_token = jwt.sign(
       {
-        user_id: user.id,
-        tenant_id: user.tenant_id,
+        user_id: user._id.toString(),
+        tenant_id: user.tenant_id.toString(),
         email: user.email,
         role: user.role,
       },
-      config.JWT_SECRET,
+      config.JWT_SECRET!,
       { expiresIn: '1h' }
     );
 
     const refresh_token = jwt.sign(
-      { user_id: user.id },
-      config.JWT_REFRESH_SECRET,
+      { user_id: user._id.toString() },
+      config.JWT_REFRESH_SECRET!,
       { expiresIn: '7d' }
     );
 
-    logger.info('User logged in', { user_id: user.id, email: user.email });
+    logger.info('User logged in', { user_id: user._id, email: user.email });
 
     res.json({
       access_token,
       refresh_token,
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         role: user.role,
         tenant_id: user.tenant_id,
@@ -194,7 +162,7 @@ router.post('/login', async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', error.errors));
+      next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
     }

@@ -1,7 +1,7 @@
 // backend/src/services/myinvois.ts
 import axios, { AxiosError } from 'axios';
-import { pool } from '../config/database';
-import { Invoice, InvoiceItem, Customer, Tenant } from '../types';
+import { Tenant } from '../models';
+import { IInvoice, IInvoiceItem, ICustomer, ITenant } from '../models';
 import { AppError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
@@ -91,18 +91,12 @@ export class MyInvoisClient {
    */
   async getAccessToken(): Promise<string> {
     // Check if we have a valid cached token
-    const result = await pool.query(
-      `SELECT myinvois_access_token, myinvois_token_expiry
-       FROM tenants
-       WHERE id = $1`,
-      [this.tenantId]
-    );
+    const tenant = await Tenant.findById(this.tenantId);
 
-    if (result.rows.length === 0) {
+    if (!tenant) {
       throw new AppError('Tenant not found', 404);
     }
 
-    const tenant = result.rows[0];
     const now = new Date();
 
     // If token exists and hasn't expired (with 5 min buffer), return it
@@ -135,14 +129,9 @@ export class MyInvoisClient {
       const expiryDate = new Date(now.getTime() + expires_in * 1000);
 
       // Cache the token in database
-      await pool.query(
-        `UPDATE tenants
-         SET myinvois_access_token = $1,
-             myinvois_token_expiry = $2,
-             updated_at = NOW()
-         WHERE id = $3`,
-        [access_token, expiryDate, this.tenantId]
-      );
+      tenant.myinvois_access_token = access_token;
+      tenant.myinvois_token_expiry = expiryDate;
+      await tenant.save();
 
       logger.info(`MyInvois token refreshed for tenant ${this.tenantId}`);
       return access_token;
@@ -152,7 +141,9 @@ export class MyInvoisClient {
         logger.error('MyInvois OAuth2 error:', axiosError.response?.data);
         throw new AppError(
           `Failed to obtain MyInvois access token: ${axiosError.message}`,
-          500
+          500,
+          undefined,
+          axiosError.response?.data
         );
       }
       throw error;
@@ -163,13 +154,12 @@ export class MyInvoisClient {
    * Submit invoice to MyInvois API
    */
   async submitInvoice(
-    invoice: Invoice,
-    items: InvoiceItem[],
-    customer: Customer,
-    tenant: Tenant
+    invoice: IInvoice,
+    customer: ICustomer,
+    tenant: ITenant
   ): Promise<MyInvoisSubmissionResponse> {
     const token = await this.getAccessToken();
-    const payload = buildMyInvoisPayload(invoice, items, customer, tenant);
+    const payload = buildMyInvoisPayload(invoice, customer, tenant);
 
     try {
       const response = await axios.post<MyInvoisSubmissionResponse>(
@@ -197,6 +187,7 @@ export class MyInvoisClient {
         throw new AppError(
           `Failed to submit invoice to MyInvois: ${axiosError.message}`,
           500,
+          undefined,
           axiosError.response?.data
         );
       }
@@ -228,6 +219,7 @@ export class MyInvoisClient {
         throw new AppError(
           `Failed to get document status from MyInvois: ${axiosError.message}`,
           500,
+          undefined,
           axiosError.response?.data
         );
       }
@@ -260,10 +252,9 @@ export class MyInvoisClient {
  * Build MyInvois UBL 2.1 payload from invoice data
  */
 export function buildMyInvoisPayload(
-  invoice: Invoice,
-  items: InvoiceItem[],
-  customer: Customer,
-  tenant: Tenant
+  invoice: IInvoice,
+  customer: ICustomer,
+  tenant: ITenant
 ): any {
   const invoiceTypeMapping: Record<string, string> = {
     '01': '01',  // Invoice
@@ -280,7 +271,7 @@ export function buildMyInvoisPayload(
   };
 
   // Build invoice lines
-  const invoiceLines = items.map((item, index) => {
+  const invoiceLines = invoice.items.map((item, index) => {
     const lineExtensionAmount = item.quantity * item.unit_price;
     const taxInfo = taxTypeMapping[item.tax_type] || { code: '01' };
 
@@ -353,7 +344,7 @@ export function buildMyInvoisPayload(
   });
 
   // Build tax totals by tax type
-  const taxTotals = items.reduce((acc, item) => {
+  const taxTotals = invoice.items.reduce((acc, item) => {
     const taxType = item.tax_type;
     if (!acc[taxType]) {
       acc[taxType] = {
@@ -787,3 +778,4 @@ export function buildMyInvoisPayload(
 
   return ublDocument;
 }
+

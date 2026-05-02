@@ -1,10 +1,10 @@
 // backend/src/routes/customers.ts
 import { Router } from 'express';
 import { z } from 'zod';
-import { pool } from '../config/database';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
 import { ValidationError, NotFoundError } from '../utils/errors';
+import { Customer } from '../models';
 
 const router = Router();
 
@@ -41,34 +41,27 @@ router.post('/', async (req: AuthRequest, res, next) => {
       }
     }
 
-    const result = await pool.query(
-      `INSERT INTO customers (
-        tenant_id, name, email, phone, registration_no, id_type, tin_number,
-        address_line1, address_line2, city, postcode, state_code, country_code, customer_type
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING *`,
-      [
-        req.tenantId,
-        data.name,
-        data.email,
-        data.phone,
-        data.registration_no,
-        data.id_type,
-        data.tin_number,
-        data.address_line1,
-        data.address_line2,
-        data.city,
-        data.postcode,
-        data.state_code,
-        data.country_code,
-        data.customer_type,
-      ]
-    );
+    const customer = await Customer.create({
+      tenant_id: req.tenantId,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      registration_no: data.registration_no,
+      id_type: data.id_type,
+      tin_number: data.tin_number,
+      address_line1: data.address_line1,
+      address_line2: data.address_line2,
+      city: data.city,
+      postcode: data.postcode,
+      state_code: data.state_code,
+      country_code: data.country_code,
+      customer_type: data.customer_type,
+    });
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(customer);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', error.errors));
+      next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
     }
@@ -79,36 +72,35 @@ router.get('/', async (req: AuthRequest, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const offset = (page - 1) * limit;
+    const skip = (page - 1) * limit;
     const search = req.query.search as string;
 
-    let query = `
-      SELECT * FROM customers
-      WHERE tenant_id = $1 AND deleted_at IS NULL
-    `;
-    const params: any[] = [req.tenantId];
+    const query: any = {
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    };
 
     if (search) {
-      query += ` AND (name ILIKE $2 OR email ILIKE $2)`;
-      params.push(`%${search}%`);
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
     }
 
-    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM customers WHERE tenant_id = $1 AND deleted_at IS NULL',
-      [req.tenantId]
-    );
+    const [customers, total] = await Promise.all([
+      Customer.find(query)
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit),
+      Customer.countDocuments(query),
+    ]);
 
     res.json({
-      data: result.rows,
+      data: customers,
       pagination: {
         page,
         limit,
-        total: parseInt(countResult.rows[0].count),
+        total,
       },
     });
   } catch (error) {
@@ -118,16 +110,17 @@ router.get('/', async (req: AuthRequest, res, next) => {
 
 router.get('/:id', async (req: AuthRequest, res, next) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM customers WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL',
-      [req.params.id, req.tenantId]
-    );
+    const customer = await Customer.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    });
 
-    if (result.rows.length === 0) {
+    if (!customer) {
       throw new NotFoundError('Customer not found');
     }
 
-    res.json(result.rows[0]);
+    res.json(customer);
   } catch (error) {
     next(error);
   }
@@ -137,30 +130,38 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
   try {
     const data = customerSchema.parse(req.body);
 
-    const result = await pool.query(
-      `UPDATE customers SET
-        name = $1, email = $2, phone = $3, registration_no = $4, id_type = $5,
-        tin_number = $6, address_line1 = $7, address_line2 = $8, city = $9,
-        postcode = $10, state_code = $11, country_code = $12, customer_type = $13,
-        updated_at = NOW()
-      WHERE id = $14 AND tenant_id = $15 AND deleted_at IS NULL
-      RETURNING *`,
-      [
-        data.name, data.email, data.phone, data.registration_no, data.id_type,
-        data.tin_number, data.address_line1, data.address_line2, data.city,
-        data.postcode, data.state_code, data.country_code, data.customer_type,
-        req.params.id, req.tenantId,
-      ]
+    const customer = await Customer.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        tenant_id: req.tenantId,
+        deleted_at: null,
+      },
+      {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        registration_no: data.registration_no,
+        id_type: data.id_type,
+        tin_number: data.tin_number,
+        address_line1: data.address_line1,
+        address_line2: data.address_line2,
+        city: data.city,
+        postcode: data.postcode,
+        state_code: data.state_code,
+        country_code: data.country_code,
+        customer_type: data.customer_type,
+      },
+      { new: true }
     );
 
-    if (result.rows.length === 0) {
+    if (!customer) {
       throw new NotFoundError('Customer not found');
     }
 
-    res.json(result.rows[0]);
+    res.json(customer);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', error.errors));
+      next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
     }
@@ -169,12 +170,17 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 
 router.delete('/:id', async (req: AuthRequest, res, next) => {
   try {
-    const result = await pool.query(
-      'UPDATE customers SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL RETURNING id',
-      [req.params.id, req.tenantId]
+    const customer = await Customer.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        tenant_id: req.tenantId,
+        deleted_at: null,
+      },
+      { deleted_at: new Date() },
+      { new: true }
     );
 
-    if (result.rows.length === 0) {
+    if (!customer) {
       throw new NotFoundError('Customer not found');
     }
 

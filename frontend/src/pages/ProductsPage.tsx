@@ -25,9 +25,10 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     try {
       const response = await productApi.getAll();
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to load products:', error);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }

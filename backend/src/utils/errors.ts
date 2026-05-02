@@ -2,7 +2,9 @@ export class AppError extends Error {
   constructor(
     public message: string,
     public statusCode: number = 500,
-    public isOperational: boolean = true
+    public isOperational: boolean = true,
+    public code?: string,
+    public details?: any
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -11,8 +13,8 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string) {
-    super(message, 400);
+  constructor(message: string, code?: string, details?: any) {
+    super(message, 400, true, code, details);
   }
 }
 

@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { pool } from '../config/database';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
+import { Invoice, Customer } from '../models';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.use(authenticateJWT);
 router.use(extractTenant);
 
 const invoiceItemSchema = z.object({
-  product_id: z.string().uuid().optional(),
+  product_id: z.string().optional(),
   description: z.string().min(1).max(500),
   quantity: z.number().positive(),
   unit_price: z.number().positive(),
@@ -25,7 +26,7 @@ const invoiceItemSchema = z.object({
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1).max(50),
   invoice_type: z.enum(['01', '02', '03', '04']),
-  customer_id: z.string().uuid(),
+  customer_id: z.string(),
   issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   currency: z.string().length(3).default('MYR'),
@@ -50,113 +51,43 @@ router.post('/', async (req: AuthRequest, res, next) => {
       tax_amount += item_tax;
 
       return {
-        ...item,
+        product_id: item.product_id ? new mongoose.Types.ObjectId(item.product_id) : undefined,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        tax_type: item.tax_type,
+        tax_rate: item.tax_rate,
         tax_amount: item_tax,
+        tax_exemption_reason: item.tax_exemption_reason,
         line_total,
       };
     });
 
     const total_amount = subtotal + tax_amount;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+    // Create invoice with items
+    const invoice = await Invoice.create({
+      tenant_id: req.tenantId,
+      invoice_number: data.invoice_number,
+      invoice_type: data.invoice_type,
+      customer_id: new mongoose.Types.ObjectId(data.customer_id),
+      issue_date: new Date(data.issue_date),
+      due_date: data.due_date ? new Date(data.due_date) : undefined,
+      currency: data.currency,
+      exchange_rate: data.exchange_rate,
+      subtotal,
+      tax_amount,
+      total_amount,
+      payment_method: data.payment_method,
+      payment_terms: data.payment_terms,
+      status: 'draft',
+      items: itemsWithTotals,
+    });
 
-      // Create invoice
-      const invoiceResult = await client.query(
-        `INSERT INTO invoices (
-          tenant_id, invoice_number, invoice_type, customer_id, issue_date, due_date,
-          currency, exchange_rate, subtotal, tax_amount, total_amount,
-          payment_method, payment_terms, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'draft')
-        RETURNING *`,
-        [
-          req.tenantId,
-          data.invoice_number,
-          data.invoice_type,
-          data.customer_id,
-          data.issue_date,
-          data.due_date,
-          data.currency,
-          data.exchange_rate,
-          subtotal,
-          tax_amount,
-          total_amount,
-          data.payment_method,
-          data.payment_terms,
-        ]
-      );
-
-      const invoice = invoiceResult.rows[0];
-
-      // Create invoice items
-      for (const item of itemsWithTotals) {
-        await client.query(
-          `INSERT INTO invoice_items (
-            invoice_id, product_id, description, quantity, unit_price,
-            tax_type, tax_rate, tax_amount, tax_exemption_reason, line_total
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [
-            invoice.id,
-            item.product_id,
-            item.description,
-            item.quantity,
-            item.unit_price,
-            item.tax_type,
-            item.tax_rate,
-            item.tax_amount,
-            item.tax_exemption_reason,
-            item.line_total,
-          ]
-        );
-      }
-
-      // Create tax summary
-      const taxSummary = new Map<string, { taxable_amount: number; tax_amount: number }>();
-
-      for (const item of itemsWithTotals) {
-        const key = `${item.tax_type}-${item.tax_rate}`;
-        if (!taxSummary.has(key)) {
-          taxSummary.set(key, { taxable_amount: 0, tax_amount: 0 });
-        }
-        const summary = taxSummary.get(key)!;
-        summary.taxable_amount += item.line_total;
-        summary.tax_amount += item.tax_amount;
-      }
-
-      for (const [key, summary] of taxSummary) {
-        const [tax_type, tax_rate] = key.split('-');
-        await client.query(
-          `INSERT INTO invoice_tax_summary (
-            invoice_id, tax_type, tax_rate, taxable_amount, tax_amount
-          ) VALUES ($1, $2, $3, $4, $5)`,
-          [invoice.id, tax_type, parseFloat(tax_rate), summary.taxable_amount, summary.tax_amount]
-        );
-      }
-
-      await client.query('COMMIT');
-
-      // Fetch complete invoice with items
-      const completeInvoice = await pool.query(
-        `SELECT i.*,
-          json_agg(ii.*) as items
-         FROM invoices i
-         LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-         WHERE i.id = $1
-         GROUP BY i.id`,
-        [invoice.id]
-      );
-
-      res.status(201).json(completeInvoice.rows[0]);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    res.status(201).json(invoice);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', error.errors));
+      next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
     }
@@ -167,38 +98,33 @@ router.get('/', async (req: AuthRequest, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const offset = (page - 1) * limit;
+    const skip = (page - 1) * limit;
     const status = req.query.status as string;
 
-    let query = `
-      SELECT i.*, c.name as customer_name
-      FROM invoices i
-      JOIN customers c ON c.id = i.customer_id
-      WHERE i.tenant_id = $1 AND i.deleted_at IS NULL
-    `;
-    const params: any[] = [req.tenantId];
+    const query: any = {
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    };
 
     if (status) {
-      query += ` AND i.status = $${params.length + 1}`;
-      params.push(status);
+      query.status = status;
     }
 
-    query += ` ORDER BY i.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND deleted_at IS NULL',
-      [req.tenantId]
-    );
+    const [invoices, total] = await Promise.all([
+      Invoice.find(query)
+        .populate('customer_id', 'name')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit),
+      Invoice.countDocuments(query),
+    ]);
 
     res.json({
-      data: result.rows,
+      data: invoices,
       pagination: {
         page,
         limit,
-        total: parseInt(countResult.rows[0].count),
+        total,
       },
     });
   } catch (error) {
@@ -208,34 +134,17 @@ router.get('/', async (req: AuthRequest, res, next) => {
 
 router.get('/:id', async (req: AuthRequest, res, next) => {
   try {
-    const result = await pool.query(
-      `SELECT i.*,
-        json_agg(json_build_object(
-          'id', ii.id,
-          'product_id', ii.product_id,
-          'description', ii.description,
-          'quantity', ii.quantity,
-          'unit_price', ii.unit_price,
-          'tax_type', ii.tax_type,
-          'tax_rate', ii.tax_rate,
-          'tax_amount', ii.tax_amount,
-          'line_total', ii.line_total
-        )) as items,
-        c.name as customer_name,
-        c.email as customer_email
-       FROM invoices i
-       LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-       LEFT JOIN customers c ON c.id = i.customer_id
-       WHERE i.id = $1 AND i.tenant_id = $2 AND i.deleted_at IS NULL
-       GROUP BY i.id, c.name, c.email`,
-      [req.params.id, req.tenantId]
-    );
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    }).populate('customer_id', 'name email');
 
-    if (result.rows.length === 0) {
+    if (!invoice) {
       throw new NotFoundError('Invoice not found');
     }
 
-    res.json(result.rows[0]);
+    res.json(invoice);
   } catch (error) {
     next(error);
   }
@@ -244,14 +153,18 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
 router.delete('/:id', async (req: AuthRequest, res, next) => {
   try {
     // Only allow deleting draft invoices
-    const result = await pool.query(
-      `UPDATE invoices SET deleted_at = NOW()
-       WHERE id = $1 AND tenant_id = $2 AND status = 'draft' AND deleted_at IS NULL
-       RETURNING id`,
-      [req.params.id, req.tenantId]
+    const invoice = await Invoice.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        tenant_id: req.tenantId,
+        status: 'draft',
+        deleted_at: null,
+      },
+      { deleted_at: new Date() },
+      { new: true }
     );
 
-    if (result.rows.length === 0) {
+    if (!invoice) {
       throw new NotFoundError('Invoice not found or cannot be deleted');
     }
 
@@ -264,27 +177,23 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
 router.post('/:id/submit', async (req: AuthRequest, res, next) => {
   try {
     // Validate invoice can be submitted
-    const result = await pool.query(
-      `SELECT id, status FROM invoices
-       WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
-      [req.params.id, req.tenantId]
-    );
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    });
 
-    if (result.rows.length === 0) {
+    if (!invoice) {
       throw new NotFoundError('Invoice not found');
     }
-
-    const invoice = result.rows[0];
 
     if (invoice.status !== 'draft' && invoice.status !== 'validated') {
       throw new ValidationError('Invoice cannot be submitted in current status');
     }
 
     // Update status to validated
-    await pool.query(
-      `UPDATE invoices SET status = 'validated' WHERE id = $1`,
-      [req.params.id]
-    );
+    invoice.status = 'validated';
+    await invoice.save();
 
     // Queue submission job
     const job = await invoiceQueue.add({
