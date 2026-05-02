@@ -3,7 +3,7 @@
 A modern, multi-tenant SaaS application for automating invoice submission to Malaysia's LHDN (Lembaga Hasil Dalam Negeri) via the MyInvois API. Built with a beautiful, professional dark-themed UI.
 
 ![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-success)
-![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue)
+![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20MongoDB-blue)
 
 ## ✨ Features
 
@@ -42,7 +42,7 @@ A modern, multi-tenant SaaS application for automating invoice submission to Mal
 ### Backend
 - **Node.js + Express** - RESTful API server
 - **TypeScript** - Type-safe backend
-- **PostgreSQL** - Relational database
+- **MongoDB + Mongoose** - NoSQL database
 - **Bull + Redis** - Job queue for background processing
 - **JWT** - Secure authentication
 
@@ -50,7 +50,7 @@ A modern, multi-tenant SaaS application for automating invoice submission to Mal
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 14+
+- MongoDB Atlas account (or local MongoDB)
 - Redis 6+
 
 ### Backend Setup
@@ -136,8 +136,8 @@ The application will be available at:
 NODE_ENV=development
 PORT=3000
 
-# Database (PostgreSQL)
-DATABASE_URL=postgresql://postgres:password@localhost:5432/einvoice
+# Database (MongoDB Atlas)
+DATABASE_URL=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/?appName=einvoice
 
 # Authentication (Generate with: openssl rand -base64 32)
 JWT_SECRET=your-generated-jwt-secret-here
@@ -159,9 +159,9 @@ REDIS_PASSWORD=
 ```
 
 **Important Notes:**
-- Replace `postgres:password` with your actual PostgreSQL credentials
+- Replace connection string with your actual MongoDB Atlas credentials
 - Generate secure secrets using the OpenSSL commands provided
-- Ensure PostgreSQL and Redis are running before starting the backend
+- Ensure MongoDB and Redis are running before starting the backend
 - The ENCRYPTION_KEY must be exactly 32 characters
 
 ## 🎨 UI Features
