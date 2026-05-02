@@ -124,7 +124,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 
     // Transform invoices to include customerName
     const transformedInvoices = invoices.map(invoice => {
-      const invoiceObj = invoice.toObject();
+      const invoiceObj: any = invoice.toObject();
       return {
         ...invoiceObj,
         customerName: invoiceObj.customer_id?.name || 'Unknown',
