@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, Trash2, Search, FileText, Filter } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { invoiceApi } from '../lib/api';
+import InvoiceDetailModal from '../components/InvoiceDetailModal';
 
 interface Invoice {
   id: string;
@@ -18,6 +19,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -526,26 +528,25 @@ export default function InvoicesPage() {
                           gap: '0.5rem',
                           justifyContent: 'flex-end'
                         }}>
-                          <Link to={`/dashboard/invoices/${invoice.id}`}>
-                            <motion.button
-                              style={{
-                                padding: '0.5rem',
-                                background: 'rgba(59, 130, 246, 0.1)',
-                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                borderRadius: '0.5rem',
-                                color: '#60a5fa',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              whileHover={{ scale: 1.1, background: 'rgba(59, 130, 246, 0.2)' }}
-                              whileTap={{ scale: 0.9 }}
-                              title="View"
-                            >
-                              <Eye style={{ width: '16px', height: '16px' }} />
-                            </motion.button>
-                          </Link>
+                          <motion.button
+                            onClick={() => setSelectedInvoiceId(invoice.id)}
+                            style={{
+                              padding: '0.5rem',
+                              background: 'rgba(59, 130, 246, 0.1)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              borderRadius: '0.5rem',
+                              color: '#60a5fa',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            whileHover={{ scale: 1.1, background: 'rgba(59, 130, 246, 0.2)' }}
+                            whileTap={{ scale: 0.9 }}
+                            title="View"
+                          >
+                            <Eye style={{ width: '16px', height: '16px' }} />
+                          </motion.button>
                           <motion.button
                             onClick={() => handleDelete(invoice.id)}
                             style={{
@@ -575,6 +576,17 @@ export default function InvoicesPage() {
           </div>
         </motion.div>
       )}
+
+      {/* Invoice Detail Modal */}
+      <AnimatePresence>
+        {selectedInvoiceId && (
+          <InvoiceDetailModal
+            invoiceId={selectedInvoiceId}
+            onClose={() => setSelectedInvoiceId(null)}
+            onUpdate={loadInvoices}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
