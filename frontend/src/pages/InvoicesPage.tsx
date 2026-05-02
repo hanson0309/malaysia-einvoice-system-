@@ -26,16 +26,27 @@ export default function InvoicesPage() {
   const loadInvoices = async () => {
     try {
       setLoading(true);
+      console.log('Loading invoices...');
       const response = await invoiceApi.getAll();
-      const data = Array.isArray(response.data) ? response.data : [];
-      const mappedInvoices = data.map((inv: any) => ({
+      console.log('Invoices API response:', response.data);
+
+      // Handle nested data structure from backend
+      const invoicesData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+
+      console.log('Parsed invoices:', invoicesData);
+
+      const mappedInvoices = invoicesData.map((inv: any) => ({
         id: inv._id,
-        invoiceNumber: inv.invoiceNumber,
+        invoiceNumber: inv.invoice_number,
         customerName: inv.customer?.name || 'Unknown',
-        date: inv.issueDate,
-        total: inv.totalAmount,
-        status: mapStatus(inv.myInvoisStatus || inv.status)
+        date: inv.issue_date,
+        total: inv.total_amount,
+        status: mapStatus(inv.status)
       }));
+
+      console.log('Mapped invoices:', mappedInvoices);
       setInvoices(mappedInvoices);
     } catch (error) {
       console.error('Failed to load invoices:', error);
