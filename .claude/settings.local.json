@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills *)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Add Malaysia e-invoice system design specification *)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npm create *)",
+      "Bash(node_modules/.bin/tailwindcss init *)",
+      "Bash(git init *)",
+      "Bash(git reset *)"
+    ]
+  }
+}
