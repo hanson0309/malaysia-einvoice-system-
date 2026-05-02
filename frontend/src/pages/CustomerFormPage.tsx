@@ -99,14 +99,29 @@ export default function CustomerFormPage() {
     setIsLoading(true);
 
     try {
+      // Clean up empty strings to undefined for optional fields
+      const cleanedData = {
+        ...formData,
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        tin_number: formData.tin_number.trim() || undefined,
+        address_line1: formData.address_line1.trim() || undefined,
+        address_line2: formData.address_line2.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        postcode: formData.postcode.trim() || undefined,
+        state_code: formData.state_code.trim() || undefined,
+      };
+
+      console.log('Sending customer data:', cleanedData);
       if (isEdit) {
-        await customerApi.update(id!, formData);
+        await customerApi.update(id!, cleanedData);
       } else {
-        await customerApi.create(formData);
+        await customerApi.create(cleanedData);
       }
       navigate('/dashboard/customers');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save customer');
+      console.error('Customer creation error:', err.response?.data);
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to save customer');
     } finally {
       setIsLoading(false);
     }

@@ -29,6 +29,7 @@ const customerSchema = z.object({
 
 router.post('/', async (req: AuthRequest, res, next) => {
   try {
+    console.log('Received customer data:', JSON.stringify(req.body, null, 2));
     const data = customerSchema.parse(req.body);
 
     // Validate B2B requirements
@@ -61,6 +62,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
     res.status(201).json(customer);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Zod validation errors:', JSON.stringify(error.issues, null, 2));
       next(new ValidationError('Validation failed', undefined, error.issues));
     } else {
       next(error);
