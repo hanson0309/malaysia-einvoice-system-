@@ -16,22 +16,22 @@ interface RegisterStep3Props {
 }
 
 const MALAYSIAN_STATES = [
-  { code: 'JHR', name: 'Johor' },
-  { code: 'KDH', name: 'Kedah' },
-  { code: 'KTN', name: 'Kelantan' },
-  { code: 'KUL', name: 'Kuala Lumpur' },
-  { code: 'LBN', name: 'Labuan' },
-  { code: 'MLK', name: 'Melaka' },
-  { code: 'NSN', name: 'Negeri Sembilan' },
-  { code: 'PHG', name: 'Pahang' },
-  { code: 'PJY', name: 'Putrajaya' },
-  { code: 'PLS', name: 'Perlis' },
-  { code: 'PNG', name: 'Penang' },
-  { code: 'PRK', name: 'Perak' },
-  { code: 'SBH', name: 'Sabah' },
-  { code: 'SGR', name: 'Selangor' },
-  { code: 'SWK', name: 'Sarawak' },
-  { code: 'TRG', name: 'Terengganu' },
+  { code: '01', name: 'Johor' },
+  { code: '02', name: 'Kedah' },
+  { code: '03', name: 'Kelantan' },
+  { code: '14', name: 'Kuala Lumpur' },
+  { code: '15', name: 'Labuan' },
+  { code: '04', name: 'Melaka' },
+  { code: '05', name: 'Negeri Sembilan' },
+  { code: '06', name: 'Pahang' },
+  { code: '16', name: 'Putrajaya' },
+  { code: '09', name: 'Perlis' },
+  { code: '07', name: 'Penang' },
+  { code: '08', name: 'Perak' },
+  { code: '12', name: 'Sabah' },
+  { code: '10', name: 'Selangor' },
+  { code: '13', name: 'Sarawak' },
+  { code: '11', name: 'Terengganu' },
 ];
 
 export default function RegisterStep3({
