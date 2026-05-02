@@ -46,26 +46,44 @@ interface InvoiceDetailModalProps {
 }
 
 export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: InvoiceDetailModalProps) {
-  // @ts-expect-error - Placeholder component, will be implemented in subsequent tasks
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
-  // @ts-expect-error - Placeholder component, will be implemented in subsequent tasks
   const [isLoading, setIsLoading] = useState(true);
   // @ts-expect-error - Placeholder component, will be implemented in subsequent tasks
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  useEffect(() => {
+    loadInvoice();
+  }, [invoiceId]);
+
+  const loadInvoice = async () => {
+    try {
+      const response = await invoiceApi.getById(invoiceId);
+      setInvoice(response.data);
+    } catch (error) {
+      console.error('Failed to load invoice:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Placeholder for hooks and handlers - suppress unused parameter warnings
-  void invoiceId;
   void onClose;
   void onUpdate;
-  void useEffect;
   void motion;
   void ArrowLeft;
   void Send;
   void RefreshCw;
   void X;
   void Clock;
-  void invoiceApi;
   void irbApi;
 
-  return null;
+  if (isLoading || !invoice) {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="text-slate-300">Loading invoice...</div>
+      </div>
+    );
+  }
+
+  return null; // Placeholder for main UI
 }
