@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import customerRoutes from './customers';
 import productRoutes from './products';
 import invoiceRoutes from './invoices';
+import irbRoutes from './irb';
 
 const router = Router();
 
@@ -10,5 +11,6 @@ router.use('/auth', authRoutes);
 router.use('/customers', customerRoutes);
 router.use('/products', productRoutes);
 router.use('/invoices', invoiceRoutes);
+router.use('/irb', irbRoutes);
 
 export default router;

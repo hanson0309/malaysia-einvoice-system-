@@ -65,6 +65,7 @@ export const productApi = {
 };
 
 // Invoice API
+// Note: invoiceApi.submit() is the legacy MyInvois endpoint (being replaced by IRB system)
 export const invoiceApi = {
   getAll: () => api.get('/invoices'),
   getById: (id: string) => api.get(`/invoices/${id}`),
@@ -73,9 +74,51 @@ export const invoiceApi = {
   delete: (id: string) => api.delete(`/invoices/${id}`),
 };
 
+// IRB API Response Types
+export interface IRBSubmitResponse {
+  success: boolean;
+  submissionId: string;
+  timestamp: string;
+  message?: string;
+}
+
+export interface IRBStatusResponse {
+  submissionId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'processing';
+  timestamp: string;
+  details?: string;
+  errorCode?: string;
+}
+
+export interface IRBTinLookupResponse {
+  success: boolean;
+  tin?: string;
+  name?: string;
+  status?: string;
+  message?: string;
+}
+
 // IRB API
+// Endpoints for submitting invoices to the IRB (Inland Revenue Board) government system
 export const irbApi = {
-  submitInvoice: (id: string) => api.post(`/irb/submit/${id}`),
-  getStatus: (id: string) => api.get(`/irb/status/${id}`),
-  lookupTin: (nric: string) => api.post('/irb/tin-lookup', { nric }),
+  /**
+   * Submit an invoice to the IRB government system for e-invoicing compliance
+   * @param id - The invoice ID to submit
+   * @returns Promise with submission confirmation and tracking ID
+   */
+  submitInvoice: (id: string) => api.post<IRBSubmitResponse>(`/irb/submit/${id}`),
+
+  /**
+   * Check the submission status of an invoice in the IRB system
+   * @param id - The invoice ID to check status for
+   * @returns Promise with current submission status and details
+   */
+  getStatus: (id: string) => api.get<IRBStatusResponse>(`/irb/status/${id}`),
+
+  /**
+   * Look up a taxpayer's TIN (Tax Identification Number) using their NRIC
+   * @param nric - The Malaysian NRIC (National Registration Identity Card) number
+   * @returns Promise with TIN and taxpayer information if found
+   */
+  lookupTin: (nric: string) => api.post<IRBTinLookupResponse>('/irb/tin-lookup', { nric }),
 };

@@ -142,8 +142,9 @@ export class MyInvoisClient {
         throw new AppError(
           `Failed to obtain MyInvois access token: ${axiosError.message}`,
           500,
+          true,
           undefined,
-          axiosError.response?.data
+          axiosError.response?.data as any
         );
       }
       throw error;
@@ -187,8 +188,9 @@ export class MyInvoisClient {
         throw new AppError(
           `Failed to submit invoice to MyInvois: ${axiosError.message}`,
           500,
+          true,
           undefined,
-          axiosError.response?.data
+          axiosError.response?.data as any
         );
       }
       throw error;
@@ -219,8 +221,9 @@ export class MyInvoisClient {
         throw new AppError(
           `Failed to get document status from MyInvois: ${axiosError.message}`,
           500,
+          true,
           undefined,
-          axiosError.response?.data
+          axiosError.response?.data as any
         );
       }
       throw error;

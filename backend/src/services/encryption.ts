@@ -3,7 +3,7 @@ import { config } from '../config/env';
 
 const ALGORITHM = 'aes-256-cbc';
 // Derive a proper 32-byte key from the encryption key using scrypt
-const KEY = crypto.scryptSync(config.ENCRYPTION_KEY, 'salt', 32);
+const KEY = crypto.scryptSync(config.ENCRYPTION_KEY || 'default-key-change-me', 'salt', 32);
 
 export const encryption = {
   encrypt: (text: string): string => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Edit2, Trash2, Search, FileText, Filter, Sparkles } from 'lucide-react';
+import { Plus, Eye, Trash2, Search, FileText, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi } from '../lib/api';
 
