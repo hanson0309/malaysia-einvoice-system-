@@ -111,15 +111,12 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
   };
 
   // Placeholder for hooks and handlers - suppress unused parameter warnings
-  void onClose;
   void handleSubmit;
   void handleRefreshStatus;
   void isRefreshing;
-  void motion;
   void ArrowLeft;
   void Send;
   void RefreshCw;
-  void X;
   void Clock;
 
   if (isLoading || !invoice) {
@@ -130,5 +127,47 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
     );
   }
 
-  return null; // Placeholder for main UI
+  return (
+    <>
+      {/* Background Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        onClick={onClose}
+      />
+
+      {/* Close Button - Top Left */}
+      <button
+        onClick={onClose}
+        className="fixed top-6 left-6 w-10 h-10 flex items-center justify-center text-slate-300 hover:text-white transition-colors z-[60]"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* System Online Badge - Top Right */}
+      <div className="fixed top-6 right-6 z-[60]">
+        <div className="px-4 py-2 rounded-full border-2 border-emerald-500/50 bg-[#2d3748]/80">
+          <span className="text-sm text-emerald-400 font-medium">System Online</span>
+        </div>
+      </div>
+
+      {/* Modal Card Container */}
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden pointer-events-auto"
+          style={{ maxHeight: 'calc(100vh - 8rem)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Placeholder for card content */}
+          <div>Card content goes here</div>
+        </motion.div>
+      </div>
+    </>
+  );
 }
