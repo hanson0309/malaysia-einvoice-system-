@@ -122,8 +122,17 @@ router.get('/', async (req: AuthRequest, res, next) => {
       Invoice.countDocuments(query),
     ]);
 
+    // Transform invoices to include customerName
+    const transformedInvoices = invoices.map(invoice => {
+      const invoiceObj = invoice.toObject();
+      return {
+        ...invoiceObj,
+        customerName: invoiceObj.customer_id?.name || 'Unknown',
+      };
+    });
+
     res.json({
-      data: invoices,
+      data: transformedInvoices,
       pagination: {
         page,
         limit,
