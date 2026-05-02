@@ -3,10 +3,28 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, RefreshCw } from 'lucide-react';
 import { invoiceApi, irbApi } from '../lib/api';
 
+interface InvoiceData {
+  _id: string;
+  invoice_number: string;
+  status: string;
+  lhdn_submission_uid?: string;
+  lhdn_submitted_at?: string;
+  lhdn_validation_code?: string;
+  lhdn_qr_code?: string;
+  lhdn_digital_signature?: string;
+  customer: any;
+  items: any[];
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  issue_date: string;
+  due_date?: string;
+}
+
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [invoice, setInvoice] = useState<any>(null);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
