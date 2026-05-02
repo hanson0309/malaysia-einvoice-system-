@@ -72,3 +72,10 @@ export const invoiceApi = {
   submit: (id: string) => api.post(`/invoices/${id}/submit`),
   delete: (id: string) => api.delete(`/invoices/${id}`),
 };
+
+// IRB API
+export const irbApi = {
+  submitInvoice: (id: string) => api.post(`/irb/submit/${id}`),
+  getStatus: (id: string) => api.get(`/irb/status/${id}`),
+  lookupTin: (nric: string) => api.post('/irb/tin-lookup', { nric }),
+};
