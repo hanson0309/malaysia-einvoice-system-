@@ -148,7 +148,7 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
     }
 
     // Transform the response to match frontend expectations
-    const invoiceData = invoice.toObject();
+    const invoiceData: any = invoice.toObject();
     invoiceData.customer = invoiceData.customer_id;
     delete invoiceData.customer_id;
 
