@@ -121,7 +121,7 @@ export default function InvoiceFormPage() {
     setIsLoading(true);
 
     try {
-      const { subtotal, tax, total } = calculateTotals();
+      const { subtotal: _subtotal, tax: _tax, total: _total } = calculateTotals();
 
       // Map frontend data to backend API format
       const invoiceData = {
