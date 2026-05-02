@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { RegisterData } from '../types/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -38,22 +39,7 @@ api.interceptors.response.use(
 
 // Auth API
 export const authApi = {
-  register: (data: {
-    company_name: string;
-    company_registration_no: string;
-    tin_number: string;
-    business_activity_code: string;
-    address_line1: string;
-    address_line2?: string;
-    city: string;
-    postcode: string;
-    state_code: string;
-    country_code: string;
-    email: string;
-    phone: string;
-    password: string;
-    sst_registration_no?: string;
-  }) => api.post('/auth/register', data),
+  register: (data: RegisterData) => api.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   refreshToken: (refreshToken: string) =>
