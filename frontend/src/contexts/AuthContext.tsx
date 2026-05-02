@@ -11,7 +11,22 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, companyName: string) => Promise<void>;
+  register: (data: {
+    company_name: string;
+    company_registration_no: string;
+    tin_number: string;
+    business_activity_code: string;
+    address_line1: string;
+    address_line2?: string;
+    city: string;
+    postcode: string;
+    state_code: string;
+    country_code: string;
+    email: string;
+    phone: string;
+    password: string;
+    sst_registration_no?: string;
+  }) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -51,16 +66,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, companyName: string) => {
+  const register = async (data: {
+    company_name: string;
+    company_registration_no: string;
+    tin_number: string;
+    business_activity_code: string;
+    address_line1: string;
+    address_line2?: string;
+    city: string;
+    postcode: string;
+    state_code: string;
+    country_code: string;
+    email: string;
+    phone: string;
+    password: string;
+    sst_registration_no?: string;
+  }) => {
     try {
-      const response = await authApi.register({ email, password, companyName });
-      const { token, refreshToken, user } = response.data;
+      const response = await authApi.register(data);
+      const { access_token, refresh_token, user } = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refreshToken', refresh_token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      setToken(token);
+      setToken(access_token);
       setUser(user);
     } catch (error) {
       throw error;
