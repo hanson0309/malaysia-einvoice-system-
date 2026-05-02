@@ -20,8 +20,16 @@ export default function CustomerFormPage() {
     name: '',
     email: '',
     phone: '',
-    address: '',
-    taxId: '',
+    registration_no: '',
+    id_type: 'NRIC' as 'NRIC' | 'PASSPORT' | 'BRN' | 'ARMY',
+    tin_number: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    postcode: '',
+    state_code: '',
+    country_code: 'MY',
+    customer_type: 'B2C' as 'B2B' | 'B2C',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -55,11 +63,24 @@ export default function CustomerFormPage() {
       newErrors.name = 'Name is required';
     }
 
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Email validation (optional but must be valid if provided)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Registration number validation
+    if (!formData.registration_no.trim()) {
+      newErrors.taxId = 'Registration number is required';
+    }
+
+    // B2B specific validations
+    if (formData.customer_type === 'B2B') {
+      if (!formData.tin_number || formData.tin_number.length !== 12) {
+        newErrors.taxId = 'TIN number (12 digits) is required for B2B customers';
+      }
+      if (!formData.address_line1.trim()) {
+        newErrors.address = 'Address is required for B2B customers';
+      }
     }
 
     setErrors(newErrors);
@@ -91,7 +112,7 @@ export default function CustomerFormPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -138,6 +159,23 @@ export default function CustomerFormPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-field">
+            <label htmlFor="customer_type" className="form-field-label form-field-label-required">
+              Customer Type
+            </label>
+            <select
+              name="customer_type"
+              id="customer_type"
+              value={formData.customer_type}
+              onChange={handleChange}
+              className="form-field-input"
+              disabled={isLoading}
+            >
+              <option value="B2C">B2C (Individual)</option>
+              <option value="B2B">B2B (Business)</option>
+            </select>
+          </div>
+
+          <div className="form-field">
             <label htmlFor="name" className="form-field-label form-field-label-required">
               Customer Name
             </label>
@@ -157,7 +195,67 @@ export default function CustomerFormPage() {
           </div>
 
           <div className="form-field">
-            <label htmlFor="email" className="form-field-label form-field-label-required">
+            <label htmlFor="id_type" className="form-field-label form-field-label-required">
+              ID Type
+            </label>
+            <select
+              name="id_type"
+              id="id_type"
+              value={formData.id_type}
+              onChange={handleChange}
+              className="form-field-input"
+              disabled={isLoading}
+            >
+              <option value="NRIC">NRIC (Malaysian IC)</option>
+              <option value="PASSPORT">Passport</option>
+              <option value="BRN">BRN (Business Registration)</option>
+              <option value="ARMY">Army ID</option>
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="registration_no" className="form-field-label form-field-label-required">
+              Registration Number
+            </label>
+            <input
+              type="text"
+              name="registration_no"
+              id="registration_no"
+              value={formData.registration_no}
+              onChange={handleChange}
+              className={`form-field-input ${errors.taxId ? 'form-field-input-error' : ''}`}
+              placeholder="Enter ID/registration number"
+              disabled={isLoading}
+            />
+            {errors.taxId && (
+              <span className="form-field-error">{errors.taxId}</span>
+            )}
+          </div>
+
+          {formData.customer_type === 'B2B' && (
+            <div className="form-field">
+              <label htmlFor="tin_number" className="form-field-label form-field-label-required">
+                TIN Number
+              </label>
+              <input
+                type="text"
+                name="tin_number"
+                id="tin_number"
+                value={formData.tin_number}
+                onChange={handleChange}
+                className="form-field-input"
+                placeholder="12-digit TIN number"
+                maxLength={12}
+                disabled={isLoading}
+              />
+              <span className="form-help-text">
+                Tax Identification Number (12 digits, required for B2B)
+              </span>
+            </div>
+          )}
+
+          <div className="form-field">
+            <label htmlFor="email" className="form-field-label">
               Email Address
             </label>
             <input
@@ -195,18 +293,18 @@ export default function CustomerFormPage() {
           </div>
 
           <div className="form-field">
-            <label htmlFor="address" className="form-field-label">
-              Address
+            <label htmlFor="address_line1" className="form-field-label">
+              Address Line 1 {formData.customer_type === 'B2B' && <span className="text-red-500">*</span>}
             </label>
-            <textarea
-              name="address"
-              id="address"
-              value={formData.address}
+            <input
+              type="text"
+              name="address_line1"
+              id="address_line1"
+              value={formData.address_line1}
               onChange={handleChange}
-              className={`form-field-textarea ${errors.address ? 'form-field-input-error' : ''}`}
-              placeholder="Enter customer address"
+              className={`form-field-input ${errors.address ? 'form-field-input-error' : ''}`}
+              placeholder="Street address"
               disabled={isLoading}
-              rows={3}
             />
             {errors.address && (
               <span className="form-field-error">{errors.address}</span>
@@ -214,25 +312,68 @@ export default function CustomerFormPage() {
           </div>
 
           <div className="form-field">
-            <label htmlFor="taxId" className="form-field-label">
-              Registration Number
+            <label htmlFor="address_line2" className="form-field-label">
+              Address Line 2
             </label>
             <input
               type="text"
-              name="taxId"
-              id="taxId"
-              value={formData.taxId}
+              name="address_line2"
+              id="address_line2"
+              value={formData.address_line2}
               onChange={handleChange}
-              className={`form-field-input ${errors.taxId ? 'form-field-input-error' : ''}`}
-              placeholder="Company registration number"
+              className="form-field-input"
+              placeholder="Apartment, suite, etc. (optional)"
               disabled={isLoading}
             />
-            {errors.taxId && (
-              <span className="form-field-error">{errors.taxId}</span>
-            )}
-            <span className="form-help-text">
-              Optional: Business registration or tax identification number
-            </span>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="city" className="form-field-label">
+              City
+            </label>
+            <input
+              type="text"
+              name="city"
+              id="city"
+              value={formData.city}
+              onChange={handleChange}
+              className="form-field-input"
+              placeholder="City"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="postcode" className="form-field-label">
+              Postcode
+            </label>
+            <input
+              type="text"
+              name="postcode"
+              id="postcode"
+              value={formData.postcode}
+              onChange={handleChange}
+              className="form-field-input"
+              placeholder="Postcode"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="state_code" className="form-field-label">
+              State Code
+            </label>
+            <input
+              type="text"
+              name="state_code"
+              id="state_code"
+              value={formData.state_code}
+              onChange={handleChange}
+              className="form-field-input"
+              placeholder="2-digit state code (e.g., 14 for Kuala Lumpur)"
+              maxLength={2}
+              disabled={isLoading}
+            />
           </div>
 
           <div className="form-actions">
