@@ -38,8 +38,22 @@ api.interceptors.response.use(
 
 // Auth API
 export const authApi = {
-  register: (data: { email: string; password: string; companyName: string }) =>
-    api.post('/auth/register', data),
+  register: (data: {
+    company_name: string;
+    company_registration_no: string;
+    tin_number: string;
+    business_activity_code: string;
+    address_line1: string;
+    address_line2?: string;
+    city: string;
+    postcode: string;
+    state_code: string;
+    country_code: string;
+    email: string;
+    phone: string;
+    password: string;
+    sst_registration_no?: string;
+  }) => api.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   refreshToken: (refreshToken: string) =>
