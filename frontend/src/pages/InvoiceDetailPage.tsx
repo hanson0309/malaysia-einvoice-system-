@@ -9,7 +9,7 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // @ts-expect-error - isRefreshing will be used in Task 4
+  // @ts-expect-error - Used in handleRefreshStatus, called from UI in Task 5
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -44,6 +44,30 @@ export default function InvoiceDetailPage() {
       } else {
         alert(`提交失败：${errorMsg}`);
       }
+    }
+  };
+
+  // @ts-expect-error - Will be called from refresh button in Task 5
+  const handleRefreshStatus = async () => {
+    if (!invoice?.lhdn_submission_uid) return;
+
+    setIsRefreshing(true);
+    try {
+      const response = await irbApi.getStatus(id!);
+      const newStatus = response.data.status;
+      const currentStatus = invoice.status;
+
+      if (newStatus !== currentStatus) {
+        alert(`状态已更新为：${newStatus}`);
+      } else {
+        alert(`状态无变化，仍为：${currentStatus}`);
+      }
+
+      await loadInvoice();
+    } catch (error: any) {
+      alert('无法获取最新状态，请稍后重试');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
