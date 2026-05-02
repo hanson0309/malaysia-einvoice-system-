@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+// @ts-expect-error - RefreshCw will be used in Task 4
 import { ArrowLeft, Send, RefreshCw } from 'lucide-react';
 import { invoiceApi, irbApi } from '../lib/api';
 
@@ -8,6 +9,7 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // @ts-expect-error - isRefreshing will be used in Task 4
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -26,14 +28,38 @@ export default function InvoiceDetailPage() {
   };
 
   const handleSubmit = async () => {
-    if (!confirm('Submit this invoice to MyInvois?')) return;
+    if (!confirm('确认提交此发票到 MyInvois IRB？\n提交后将无法撤销。')) return;
 
     try {
-      await invoiceApi.submit(id!);
-      alert('Invoice submitted successfully!');
+      await irbApi.submitInvoice(id!);
+      alert('发票已成功提交到 IRB！');
       loadInvoice();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to submit invoice');
+      const errorMsg = error.response?.data?.error || '提交失败';
+
+      if (errorMsg.includes('credentials not configured')) {
+        alert('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
+      } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+        alert('网络连接失败，请稍后重试');
+      } else {
+        alert(`提交失败：${errorMsg}`);
+      }
+    }
+  };
+
+  // @ts-expect-error - getIRBStatusColor will be used in Task 5
+  const getIRBStatusColor = (status: string) => {
+    switch (status) {
+      case 'submitted':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'accepted':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -53,21 +79,6 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  const getIRBStatusColor = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'accepted':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -79,13 +90,13 @@ export default function InvoiceDetailPage() {
           Back to Invoices
         </button>
 
-        {invoice.status === 'draft' && !invoice.myInvoisStatus && (
+        {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
           <button
             onClick={handleSubmit}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
           >
             <Send className="w-4 h-4 mr-2" />
-            Submit to MyInvois
+            Submit to IRB
           </button>
         )}
       </div>
