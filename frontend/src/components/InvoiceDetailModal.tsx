@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Send, RefreshCw, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi, irbApi } from '../lib/api';
@@ -51,11 +51,7 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadInvoice();
-  }, [invoiceId]);
-
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       const response = await invoiceApi.getById(invoiceId);
       setInvoice(response.data);
@@ -64,7 +60,11 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [invoiceId]);
+
+  useEffect(() => {
+    loadInvoice();
+  }, [loadInvoice]);
 
   const handleSubmit = async () => {
     if (!confirm('确认提交此发票到 MyInvois IRB？\n提交后将无法撤销。')) return;
