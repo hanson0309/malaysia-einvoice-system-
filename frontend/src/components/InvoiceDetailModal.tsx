@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Send, RefreshCw, X, Clock } from 'lucide-react';
+import { ArrowLeft, Send, RefreshCw, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi, irbApi } from '../lib/api';
 
@@ -19,7 +19,7 @@ interface LineItem {
   unit_price: number;
   tax_type: 'SST' | 'E' | 'Z' | 'SR';
   tax_rate: number;
-  amount: number;
+  line_total: number;
 }
 
 interface InvoiceData {
@@ -110,9 +110,6 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
       setIsRefreshing(false);
     }
   };
-
-  // Suppress unused parameter warning
-  void Clock;
 
   if (isLoading || !invoice) {
     return (
@@ -250,7 +247,7 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
                   </tr>
                 </thead>
                 <tbody>
-                  {invoice.items.map((item: any, index: number) => (
+                  {invoice.items.map((item: LineItem, index: number) => (
                     <tr key={index} className="border-b border-slate-100">
                       <td className="py-2.5 text-slate-900">{item.description}</td>
                       <td className="py-2.5 text-slate-700 text-center">{item.quantity}</td>
