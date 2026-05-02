@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// @ts-expect-error - RefreshCw will be used in Task 4
 import { ArrowLeft, Send, RefreshCw } from 'lucide-react';
 import { invoiceApi, irbApi } from '../lib/api';
 
@@ -9,7 +8,6 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // @ts-expect-error - Used in handleRefreshStatus, called from UI in Task 5
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  // @ts-expect-error - Will be called from refresh button in Task 5
   const handleRefreshStatus = async () => {
     if (!invoice?.lhdn_submission_uid) return;
 
@@ -71,7 +68,6 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  // @ts-expect-error - getIRBStatusColor will be used in Task 5
   const getIRBStatusColor = (status: string) => {
     switch (status) {
       case 'submitted':
@@ -157,6 +153,72 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* IRB Information Section */}
+        {invoice.lhdn_submission_uid && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">IRB MyInvois Information</h2>
+              {invoice.status === 'submitted' && (
+                <button
+                  onClick={handleRefreshStatus}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center px-3 py-1.5 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? '刷新中...' : '刷新状态'}
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Status</p>
+                <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full border ${getIRBStatusColor(invoice.status)}`}>
+                  {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                </span>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-600 mb-1">UUID</p>
+                <p className="text-sm font-mono text-gray-900 break-all">{invoice.lhdn_submission_uid}</p>
+              </div>
+
+              {invoice.lhdn_submitted_at && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Submitted At</p>
+                  <p className="text-sm text-gray-900">
+                    {new Date(invoice.lhdn_submitted_at).toLocaleString('en-MY', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              )}
+
+              {invoice.lhdn_validation_code && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Validation Code</p>
+                  <p className="text-sm font-mono text-gray-900">{invoice.lhdn_validation_code}</p>
+                </div>
+              )}
+            </div>
+
+            {invoice.lhdn_qr_code && (
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <p className="text-sm text-gray-600 mb-2">QR Code</p>
+                <img
+                  src={invoice.lhdn_qr_code}
+                  alt="IRB QR Code"
+                  className="w-32 h-32 border border-gray-300 rounded"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
