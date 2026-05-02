@@ -42,7 +42,7 @@ export default function InvoicesPage() {
       const mappedInvoices = invoicesData.map((inv: any) => ({
         id: inv._id,
         invoiceNumber: inv.invoice_number,
-        customerName: inv.customer?.name || 'Unknown',
+        customerName: inv.customerName || inv.customer?.name || 'Unknown',
         date: inv.issue_date,
         total: inv.total_amount,
         status: mapStatus(inv.status)
