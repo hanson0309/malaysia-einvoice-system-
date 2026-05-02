@@ -319,6 +319,32 @@
   transform: none;
 }
 
+.btn-secondary {
+  width: 100%;
+  padding: 1.25rem;
+  background: var(--navy-mid);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--gray);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+  border-radius: 4px;
+}
+
+.btn-secondary:hover {
+  background: var(--navy-light);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
 .form-footer {
   margin-top: 2rem;
   text-align: center;

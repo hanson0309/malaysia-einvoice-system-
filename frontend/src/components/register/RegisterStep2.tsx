@@ -157,7 +157,6 @@ export default function RegisterStep2({ formData, onChange, onNext, onBack }: Re
           type="button"
           className="btn-secondary"
           onClick={onBack}
-          style={{ background: 'var(--navy-mid)', color: 'var(--gray)' }}
         >
           Back
         </button>
