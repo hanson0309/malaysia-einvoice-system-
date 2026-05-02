@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, Edit2, Trash2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';

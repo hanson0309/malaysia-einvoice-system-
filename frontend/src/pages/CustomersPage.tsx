@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { customerApi } from '../lib/api';
 import '../styles/dashboard.css';
 

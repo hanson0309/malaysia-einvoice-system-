@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { RegisterData } from '../types/auth';
+import type { RegisterData } from '../types/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -70,4 +70,5 @@ export const invoiceApi = {
   getById: (id: string) => api.get(`/invoices/${id}`),
   create: (data: any) => api.post('/invoices', data),
   submit: (id: string) => api.post(`/invoices/${id}/submit`),
+  delete: (id: string) => api.delete(`/invoices/${id}`),
 };

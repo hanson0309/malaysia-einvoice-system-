@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../lib/api';
-import { RegisterData } from '../types/auth';
+import type { RegisterData } from '../types/auth';
 
 interface User {
   id: string;
