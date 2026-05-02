@@ -230,10 +230,10 @@ export default function InvoiceDetailPage() {
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-2">Bill To:</h3>
             <div className="text-gray-900">
-              <p className="font-medium">{invoice.customer.name}</p>
-              <p className="text-sm">{invoice.customer.email}</p>
-              {invoice.customer.phone && <p className="text-sm">{invoice.customer.phone}</p>}
-              {invoice.customer.address_line1 && <p className="text-sm mt-1">{invoice.customer.address_line1}</p>}
+              <p className="font-medium">{invoice.customer?.name || 'Customer information not available'}</p>
+              {invoice.customer?.email && <p className="text-sm">{invoice.customer.email}</p>}
+              {invoice.customer?.phone && <p className="text-sm">{invoice.customer.phone}</p>}
+              {invoice.customer?.address_line1 && <p className="text-sm mt-1">{invoice.customer.address_line1}</p>}
             </div>
           </div>
 

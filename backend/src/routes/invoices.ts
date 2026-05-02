@@ -141,13 +141,18 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
       _id: req.params.id,
       tenant_id: req.tenantId,
       deleted_at: null,
-    }).populate('customer_id', 'name email');
+    }).populate('customer_id', 'name email phone address_line1 address_line2 city postcode state_code');
 
     if (!invoice) {
       throw new NotFoundError('Invoice not found');
     }
 
-    res.json(invoice);
+    // Transform the response to match frontend expectations
+    const invoiceData = invoice.toObject();
+    invoiceData.customer = invoiceData.customer_id;
+    delete invoiceData.customer_id;
+
+    res.json(invoiceData);
   } catch (error) {
     next(error);
   }
