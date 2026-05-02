@@ -25,14 +25,15 @@ describe('JWT Authentication', () => {
     }).toThrow();
   });
 
-  it('should reject expired token', () => {
+  it('should reject expired token', (done) => {
     const payload = { user_id: '123' };
-    const token = jwt.sign(payload, config.JWT_SECRET, { expiresIn: '0s' });
+    const token = jwt.sign(payload, config.JWT_SECRET, { expiresIn: '1ms' });
 
     setTimeout(() => {
       expect(() => {
         jwt.verify(token, config.JWT_SECRET);
       }).toThrow();
+      done();
     }, 100);
   });
 });
