@@ -2,24 +2,60 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import ProgressIndicator from '../components/register/ProgressIndicator';
+import RegisterStep1 from '../components/register/RegisterStep1';
+import RegisterStep2 from '../components/register/RegisterStep2';
+import RegisterStep3 from '../components/register/RegisterStep3';
 import '../styles/login.css';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [companyName, setCompanyName] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    // Step 1
+    company_name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+
+    // Step 2
+    company_registration_no: '',
+    tin_number: '',
+    business_activity_code: '',
+    sst_registration_no: '',
+
+    // Step 3
+    phone: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    postcode: '',
+    state_code: '',
+    country_code: 'MY'
+  });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNext = () => {
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prev => prev - 1);
+  };
+
+  const handleSubmit = async () => {
     setError('');
     setIsLoading(true);
 
     try {
-      await register(email, password, companyName);
+      const { confirmPassword, ...registrationData } = formData;
+      await register(registrationData);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -94,7 +130,7 @@ export default function RegisterPage() {
             <p className="form-subtitle">Start managing your invoices professionally</p>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => e.preventDefault()}>
             {error && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -105,71 +141,51 @@ export default function RegisterPage() {
               </motion.div>
             )}
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="companyName">
-                Company Name
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  id="companyName"
-                  className="form-input"
-                  placeholder="Your Company Ltd"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                />
-                <div className="input-underline"></div>
-              </div>
-            </div>
+            <ProgressIndicator currentStep={currentStep} totalSteps={3} />
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email Address
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="email"
-                  id="email"
-                  className="form-input"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <div className="input-underline"></div>
-              </div>
-            </div>
+            {currentStep === 1 && (
+              <RegisterStep1
+                formData={{
+                  company_name: formData.company_name,
+                  email: formData.email,
+                  password: formData.password,
+                  confirmPassword: formData.confirmPassword
+                }}
+                onChange={handleFieldChange}
+                onNext={handleNext}
+              />
+            )}
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                Password
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="password"
-                  id="password"
-                  className="form-input"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <div className="input-underline"></div>
-              </div>
-            </div>
+            {currentStep === 2 && (
+              <RegisterStep2
+                formData={{
+                  company_registration_no: formData.company_registration_no,
+                  tin_number: formData.tin_number,
+                  business_activity_code: formData.business_activity_code,
+                  sst_registration_no: formData.sst_registration_no
+                }}
+                onChange={handleFieldChange}
+                onNext={handleNext}
+                onBack={handleBack}
+              />
+            )}
 
-            <div className="form-actions">
-              <motion.button
-                type="submit"
-                className="btn-primary"
-                disabled={isLoading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </motion.button>
-            </div>
+            {currentStep === 3 && (
+              <RegisterStep3
+                formData={{
+                  phone: formData.phone,
+                  address_line1: formData.address_line1,
+                  address_line2: formData.address_line2,
+                  city: formData.city,
+                  postcode: formData.postcode,
+                  state_code: formData.state_code
+                }}
+                onChange={handleFieldChange}
+                onSubmit={handleSubmit}
+                onBack={handleBack}
+                isLoading={isLoading}
+              />
+            )}
           </form>
 
           <div className="form-footer">
