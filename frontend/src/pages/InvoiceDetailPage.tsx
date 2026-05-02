@@ -144,7 +144,7 @@ export default function InvoiceDetailPage() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Invoice</h1>
-              <p className="text-lg text-gray-600 mt-1">#{invoice.invoiceNumber}</p>
+              <p className="text-lg text-gray-600 mt-1">#{invoice.invoice_number}</p>
             </div>
             <div className="text-right">
               <div className="space-y-2">
@@ -155,18 +155,6 @@ export default function InvoiceDetailPage() {
                 }`}>
                   {invoice.status}
                 </span>
-                {invoice.myInvoisStatus && (
-                  <div>
-                    <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
-                      invoice.myInvoisStatus === 'validated' ? 'bg-green-100 text-green-800' :
-                      invoice.myInvoisStatus === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                      invoice.myInvoisStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      MyInvois: {invoice.myInvoisStatus}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -245,7 +233,7 @@ export default function InvoiceDetailPage() {
               <p className="font-medium">{invoice.customer.name}</p>
               <p className="text-sm">{invoice.customer.email}</p>
               {invoice.customer.phone && <p className="text-sm">{invoice.customer.phone}</p>}
-              {invoice.customer.address && <p className="text-sm mt-1">{invoice.customer.address}</p>}
+              {invoice.customer.address_line1 && <p className="text-sm mt-1">{invoice.customer.address_line1}</p>}
             </div>
           </div>
 
@@ -253,12 +241,12 @@ export default function InvoiceDetailPage() {
             <div className="space-y-1">
               <p className="text-sm">
                 <span className="text-gray-500">Issue Date:</span>{' '}
-                <span className="text-gray-900">{new Date(invoice.issueDate).toLocaleDateString()}</span>
+                <span className="text-gray-900">{new Date(invoice.issue_date).toLocaleDateString()}</span>
               </p>
-              {invoice.dueDate && (
+              {invoice.due_date && (
                 <p className="text-sm">
                   <span className="text-gray-500">Due Date:</span>{' '}
-                  <span className="text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                  <span className="text-gray-900">{new Date(invoice.due_date).toLocaleDateString()}</span>
                 </p>
               )}
             </div>
@@ -281,9 +269,9 @@ export default function InvoiceDetailPage() {
                 <tr key={index}>
                   <td className="px-4 py-4 text-sm text-gray-900">{item.description}</td>
                   <td className="px-4 py-4 text-sm text-gray-900 text-right">{item.quantity}</td>
-                  <td className="px-4 py-4 text-sm text-gray-900 text-right">RM {item.unitPrice.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-sm text-gray-900 text-right">{item.taxRate}%</td>
-                  <td className="px-4 py-4 text-sm text-gray-900 text-right">RM {item.amount.toFixed(2)}</td>
+                  <td className="px-4 py-4 text-sm text-gray-900 text-right">RM {item.unit_price.toFixed(2)}</td>
+                  <td className="px-4 py-4 text-sm text-gray-900 text-right">{item.tax_rate}%</td>
+                  <td className="px-4 py-4 text-sm text-gray-900 text-right">RM {item.line_total.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -298,11 +286,11 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tax:</span>
-              <span className="font-medium">RM {invoice.taxAmount.toFixed(2)}</span>
+              <span className="font-medium">RM {invoice.tax_amount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold border-t pt-2">
               <span>Total:</span>
-              <span>RM {invoice.totalAmount.toFixed(2)}</span>
+              <span>RM {invoice.total_amount.toFixed(2)}</span>
             </div>
           </div>
         </div>
