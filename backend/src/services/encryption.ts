@@ -2,7 +2,8 @@ import crypto from 'crypto';
 import { config } from '../config/env';
 
 const ALGORITHM = 'aes-256-cbc';
-const KEY = Buffer.from(config.ENCRYPTION_KEY, 'utf8').slice(0, 32);
+// Derive a proper 32-byte key from the encryption key using scrypt
+const KEY = crypto.scryptSync(config.ENCRYPTION_KEY, 'salt', 32);
 
 export const encryption = {
   encrypt: (text: string): string => {
@@ -14,12 +15,19 @@ export const encryption = {
   },
 
   decrypt: (text: string): string => {
-    const parts = text.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
-    const encryptedText = parts[1];
-    const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    try {
+      const parts = text.split(':');
+      if (parts.length !== 2) {
+        throw new Error('Invalid encrypted text format');
+      }
+      const iv = Buffer.from(parts[0], 'hex');
+      const encryptedText = parts[1];
+      const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
+      let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (error) {
+      throw new Error('Decryption failed: ' + (error as Error).message);
+    }
   },
 };
