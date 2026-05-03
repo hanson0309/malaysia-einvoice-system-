@@ -35,21 +35,33 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
 
     // 获取租户信息（包含 IRB 凭证）
     const tenant = await Tenant.findById(tenantId);
-    if (!tenant || !tenant.myinvois_client_id || !tenant.myinvois_client_secret) {
-      return res.status(400).json({
-        error: 'IRB credentials not configured for this tenant'
-      });
-    }
 
-    // 解密 client secret
-    const clientSecret = irbService.decrypt(
-      tenant.myinvois_client_secret,
-      tenantId.toString()
-    );
+    // Get credentials: try tenant first, then environment variables
+    let clientId: string;
+    let clientSecret: string;
+
+    if (tenant?.myinvois_client_id && tenant?.myinvois_client_secret) {
+      // Use tenant-specific credentials
+      clientId = tenant.myinvois_client_id;
+      clientSecret = irbService.decrypt(
+        tenant.myinvois_client_secret,
+        tenantId.toString()
+      );
+    } else {
+      // Fall back to environment variables
+      const envCreds = irbService.getEnvironmentCredentials();
+      if (!envCreds) {
+        return res.status(400).json({
+          error: 'IRB credentials not configured. Please add credentials to tenant or environment variables.'
+        });
+      }
+      clientId = envCreds.clientId;
+      clientSecret = envCreds.clientSecret;
+    }
 
     // 获取 OAuth token
     const accessToken = await irbService.getToken(
-      tenant.myinvois_client_id,
+      clientId,
       clientSecret
     );
 
