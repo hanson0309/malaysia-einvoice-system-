@@ -10,6 +10,8 @@ export const config = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
   MYINVOIS_BASE_URL: process.env.MYINVOIS_BASE_URL || '',
+  MYINVOIS_CLIENT_ID: process.env.MYINVOIS_CLIENT_ID || '',
+  MYINVOIS_CLIENT_SECRET: process.env.MYINVOIS_CLIENT_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 
