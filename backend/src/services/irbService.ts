@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import axios from 'axios';
 import { AES, enc } from 'crypto-js';
+import { config } from '../config/env';
 
 interface IRBConfig {
   baseUrl: string;
@@ -25,6 +26,21 @@ class IRBService {
 
   constructor() {
     this.baseUrl = process.env.MYINVOIS_BASE_URL || 'https://api.myinvois.hasil.gov.my';
+  }
+
+  /**
+   * Get credentials from environment variables
+   * Returns null if credentials are not configured
+   */
+  getEnvironmentCredentials(): { clientId: string; clientSecret: string } | null {
+    const clientId = config.MYINVOIS_CLIENT_ID;
+    const clientSecret = config.MYINVOIS_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      return null;
+    }
+
+    return { clientId, clientSecret };
   }
 
   /**
