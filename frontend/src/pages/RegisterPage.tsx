@@ -165,6 +165,7 @@ export default function RegisterPage() {
                   password: formData.password,
                   confirmPassword: formData.confirmPassword
                 }}
+                entity_type={formData.entity_type}
                 onChange={handleFieldChange}
                 onNext={handleNext}
               />
