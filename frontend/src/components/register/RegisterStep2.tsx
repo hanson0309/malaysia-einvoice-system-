@@ -241,15 +241,20 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
               menu: (base) => ({
                 ...base,
                 background: 'var(--navy-dark)',
-                border: '1px solid var(--navy-mid)'
+                backgroundColor: 'var(--navy-dark)',
+                border: '1px solid var(--navy-mid)',
+                opacity: 1
               }),
               option: (base, state) => ({
                 ...base,
                 background: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-dark)',
+                backgroundColor: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-dark)',
                 color: 'var(--white)',
                 cursor: 'pointer',
+                opacity: 1,
                 '&:hover': {
-                  background: 'var(--navy-mid)'
+                  background: 'var(--navy-mid)',
+                  backgroundColor: 'var(--navy-mid)'
                 }
               }),
               singleValue: (base) => ({
