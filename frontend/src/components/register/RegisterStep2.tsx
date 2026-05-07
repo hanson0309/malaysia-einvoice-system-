@@ -72,6 +72,9 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
     return Object.keys(newErrors).length === 0;
   };
 
+  const regNumberLabel = entity_type === 'individual' ? 'IC Number (NRIC)' : 'Company Registration Number';
+  const regNumberPlaceholder = entity_type === 'individual' ? '990101-01-1234' : '202301234567';
+
   const handleInputChange = (field: string, value: string) => {
     onChange(field, value);
     if (errors[field]) {
@@ -93,14 +96,14 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
     <div>
       <div className="form-group">
         <label className="form-label" htmlFor="company_registration_no">
-          Company Registration Number
+          {regNumberLabel}
         </label>
         <div className="input-wrapper">
           <input
             type="text"
             id="company_registration_no"
             className="form-input"
-            placeholder="202301234567"
+            placeholder={regNumberPlaceholder}
             value={formData.company_registration_no}
             onChange={(e) => handleInputChange('company_registration_no', e.target.value)}
           />
