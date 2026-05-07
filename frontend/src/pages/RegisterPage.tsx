@@ -59,7 +59,13 @@ export default function RegisterPage() {
 
     try {
       const { confirmPassword, ...registrationData } = formData;
-      await register(registrationData);
+
+      // Format TIN for individuals (add IG prefix if not already present)
+      const finalData = registrationData.entity_type === 'individual' && !registrationData.tin_number.startsWith('IG')
+        ? { ...registrationData, tin_number: `IG${registrationData.tin_number}` }
+        : registrationData;
+
+      await register(finalData);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
