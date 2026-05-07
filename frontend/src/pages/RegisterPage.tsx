@@ -179,6 +179,7 @@ export default function RegisterPage() {
                   business_activity_code: formData.business_activity_code,
                   sst_registration_no: formData.sst_registration_no
                 }}
+                entity_type={formData.entity_type}
                 onChange={handleFieldChange}
                 onNext={handleNext}
                 onBack={handleBack}
