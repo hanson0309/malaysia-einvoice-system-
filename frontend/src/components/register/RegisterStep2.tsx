@@ -238,12 +238,19 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
                 ...base,
                 zIndex: 99999
               }),
+              menuList: (base) => ({
+                ...base,
+                background: 'var(--navy-dark)',
+                backgroundColor: 'var(--navy-dark)',
+                padding: 0
+              }),
               menu: (base) => ({
                 ...base,
                 background: 'var(--navy-dark)',
                 backgroundColor: 'var(--navy-dark)',
                 border: '1px solid var(--navy-mid)',
-                opacity: 1
+                opacity: 1,
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
               }),
               option: (base, state) => ({
                 ...base,
