@@ -7,12 +7,13 @@ interface RegisterStep2Props {
     business_activity_code: string;
     sst_registration_no: string;
   };
+  entity_type: 'individual' | 'company' | '';
   onChange: (field: string, value: string) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export default function RegisterStep2({ formData, onChange, onNext, onBack }: RegisterStep2Props) {
+export default function RegisterStep2({ formData, entity_type, onChange, onNext, onBack }: RegisterStep2Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
