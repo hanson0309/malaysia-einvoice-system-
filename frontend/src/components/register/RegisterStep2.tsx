@@ -75,6 +75,12 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
   const regNumberLabel = entity_type === 'individual' ? 'IC Number (NRIC)' : 'Company Registration Number';
   const regNumberPlaceholder = entity_type === 'individual' ? '990101-01-1234' : '202301234567';
 
+  const tinLabel = 'TIN Number';
+  const tinPlaceholder = entity_type === 'individual' ? '12345678901' : 'C12345678900';
+  const tinHelperText = entity_type === 'individual'
+    ? 'TIN will be formatted as IG + 11 digits'
+    : 'Format: C followed by 10-11 digits';
+
   const handleInputChange = (field: string, value: string) => {
     onChange(field, value);
     if (errors[field]) {
@@ -83,6 +89,17 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+
+  const handleTinChange = (value: string) => {
+    if (entity_type === 'individual') {
+      // For individuals, only allow digits and limit to 11
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 11);
+      handleInputChange('tin_number', digitsOnly);
+    } else {
+      // For companies, allow C prefix and digits
+      handleInputChange('tin_number', value);
     }
   };
 
@@ -118,20 +135,43 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
 
       <div className="form-group">
         <label className="form-label" htmlFor="tin_number">
-          TIN Number
+          {tinLabel}
         </label>
+        {entity_type === 'individual' && (
+          <div style={{ fontSize: '0.875rem', color: 'var(--gray)', marginBottom: '0.5rem' }}>
+            {tinHelperText}
+          </div>
+        )}
         <div className="input-wrapper">
+          {entity_type === 'individual' && (
+            <span style={{
+              position: 'absolute',
+              left: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--gray)',
+              fontSize: '1rem',
+              pointerEvents: 'none'
+            }}>
+              IG
+            </span>
+          )}
           <input
             type="text"
             id="tin_number"
             className="form-input"
-            placeholder="123456789012"
-            maxLength={12}
+            style={entity_type === 'individual' ? { paddingLeft: '2.5rem' } : {}}
+            placeholder={tinPlaceholder}
             value={formData.tin_number}
-            onChange={(e) => handleInputChange('tin_number', e.target.value)}
+            onChange={(e) => handleTinChange(e.target.value)}
           />
           <div className="input-underline"></div>
         </div>
+        {entity_type === 'company' && (
+          <div style={{ fontSize: '0.875rem', color: 'var(--gray)', marginTop: '0.25rem' }}>
+            {tinHelperText}
+          </div>
+        )}
         {errors.tin_number && (
           <div className="field-error">
             {errors.tin_number}
