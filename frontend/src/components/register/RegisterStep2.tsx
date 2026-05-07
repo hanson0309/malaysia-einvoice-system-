@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { MSICCode, MSICOption } from '../../types/msic';
+import type { MSICCode, MSICOption } from '../../types/msic';
 
 interface RegisterStep2Props {
   formData: {
