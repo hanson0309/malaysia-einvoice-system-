@@ -7,20 +7,24 @@ interface RegisterStep1Props {
     password: string;
     confirmPassword: string;
   };
+  entity_type: 'individual' | 'company' | '';
   onChange: (field: string, value: string) => void;
   onNext: () => void;
 }
 
-export default function RegisterStep1({ formData, onChange, onNext }: RegisterStep1Props) {
+export default function RegisterStep1({ formData, entity_type, onChange, onNext }: RegisterStep1Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const fieldLabel = entity_type === 'individual' ? 'Owner Name' : 'Company Name';
+  const fieldPlaceholder = entity_type === 'individual' ? 'Your Full Name' : 'Your Company Ltd';
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.company_name.trim()) {
-      newErrors.company_name = 'Company name is required';
+      newErrors.company_name = `${fieldLabel} is required`;
     } else if (formData.company_name.length > 200) {
-      newErrors.company_name = 'Company name must be 200 characters or less';
+      newErrors.company_name = `${fieldLabel} must be 200 characters or less`;
     }
 
     if (!formData.email.trim()) {
@@ -70,14 +74,14 @@ export default function RegisterStep1({ formData, onChange, onNext }: RegisterSt
     <div>
       <div className="form-group">
         <label className="form-label" htmlFor="company_name">
-          Company Name
+          {fieldLabel}
         </label>
         <div className="input-wrapper">
           <input
             type="text"
             id="company_name"
             className="form-input"
-            placeholder="Your Company Ltd"
+            placeholder={fieldPlaceholder}
             value={formData.company_name}
             onChange={(e) => handleInputChange('company_name', e.target.value)}
           />
