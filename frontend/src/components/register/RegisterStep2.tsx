@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Select from 'react-select';
+import { MSICCode, MSICOption } from '../../types/msic';
 
 interface RegisterStep2Props {
   formData: {
@@ -15,6 +17,28 @@ interface RegisterStep2Props {
 
 export default function RegisterStep2({ formData, entity_type, onChange, onNext, onBack }: RegisterStep2Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [msicOptions, setMsicOptions] = useState<MSICOption[]>([]);
+  const [isLoadingMsic, setIsLoadingMsic] = useState(true);
+
+  useEffect(() => {
+    const loadMsicData = async () => {
+      try {
+        const response = await fetch('/msic.json');
+        const data: MSICCode[] = await response.json();
+        const options = data.map(item => ({
+          value: item.Code,
+          label: `${item.Code} - ${item.Description}`
+        }));
+        setMsicOptions(options);
+      } catch (error) {
+        console.error('Failed to load MSIC data:', error);
+      } finally {
+        setIsLoadingMsic(false);
+      }
+    };
+
+    loadMsicData();
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
