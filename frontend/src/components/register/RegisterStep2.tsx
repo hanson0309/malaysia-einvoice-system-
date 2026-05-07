@@ -127,6 +127,10 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
     }
   };
 
+  const handleBusinessActivityChange = (selectedOption: MSICOption | null) => {
+    handleInputChange('business_activity_code', selectedOption?.value || '');
+  };
+
   const handleNext = () => {
     if (validate()) {
       onNext();
@@ -208,15 +212,55 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
           Business Activity Code
         </label>
         <div className="input-wrapper">
-          <input
-            type="text"
+          <Select
             id="business_activity_code"
-            className="form-input"
-            placeholder="46510"
-            value={formData.business_activity_code}
-            onChange={(e) => handleInputChange('business_activity_code', e.target.value)}
+            options={msicOptions}
+            value={msicOptions.find(opt => opt.value === formData.business_activity_code) || null}
+            onChange={handleBusinessActivityChange}
+            placeholder="Search and select business activity..."
+            isLoading={isLoadingMsic}
+            isSearchable={true}
+            isClearable={true}
+            styles={{
+              control: (base) => ({
+                ...base,
+                background: 'var(--navy-dark)',
+                borderColor: 'var(--navy-mid)',
+                borderRadius: '4px',
+                minHeight: '48px',
+                '&:hover': {
+                  borderColor: 'var(--gold)'
+                }
+              }),
+              menu: (base) => ({
+                ...base,
+                background: 'var(--navy-dark)',
+                border: '1px solid var(--navy-mid)',
+                zIndex: 9999
+              }),
+              option: (base, state) => ({
+                ...base,
+                background: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-dark)',
+                color: 'var(--white)',
+                cursor: 'pointer',
+                '&:hover': {
+                  background: 'var(--navy-mid)'
+                }
+              }),
+              singleValue: (base) => ({
+                ...base,
+                color: 'var(--white)'
+              }),
+              input: (base) => ({
+                ...base,
+                color: 'var(--white)'
+              }),
+              placeholder: (base) => ({
+                ...base,
+                color: 'var(--gray)'
+              })
+            }}
           />
-          <div className="input-underline"></div>
         </div>
         {errors.business_activity_code && (
           <div className="field-error">
