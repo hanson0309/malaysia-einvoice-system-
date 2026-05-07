@@ -226,7 +226,8 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
             styles={{
               control: (base) => ({
                 ...base,
-                background: 'var(--navy-dark)',
+                background: 'var(--navy-deep)',
+                backgroundColor: 'var(--navy-deep)',
                 borderColor: 'var(--navy-mid)',
                 borderRadius: '4px',
                 minHeight: '48px',
@@ -240,22 +241,22 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
               }),
               menuList: (base) => ({
                 ...base,
-                background: 'var(--navy-dark)',
-                backgroundColor: 'var(--navy-dark)',
+                background: 'var(--navy-deep)',
+                backgroundColor: 'var(--navy-deep)',
                 padding: 0
               }),
               menu: (base) => ({
                 ...base,
-                background: 'var(--navy-dark)',
-                backgroundColor: 'var(--navy-dark)',
+                background: 'var(--navy-deep)',
+                backgroundColor: 'var(--navy-deep)',
                 border: '1px solid var(--navy-mid)',
                 opacity: 1,
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
               }),
               option: (base, state) => ({
                 ...base,
-                background: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-dark)',
-                backgroundColor: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-dark)',
+                background: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-deep)',
+                backgroundColor: state.isFocused ? 'var(--navy-mid)' : 'var(--navy-deep)',
                 color: 'var(--white)',
                 cursor: 'pointer',
                 opacity: 1,
