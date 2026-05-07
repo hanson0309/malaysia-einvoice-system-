@@ -19,24 +19,51 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.company_registration_no.trim()) {
-      newErrors.company_registration_no = 'Company registration number is required';
-    } else if (formData.company_registration_no.length > 50) {
-      newErrors.company_registration_no = 'Company registration number must be 50 characters or less';
+    // Ensure entity_type is set (should be set in Step 0)
+    if (!entity_type) {
+      // This shouldn't happen in normal flow, but handle gracefully
+      newErrors.company_registration_no = 'Please select entity type first';
+      setErrors(newErrors);
+      return false;
     }
 
+    // Registration Number validation (conditional)
+    if (!formData.company_registration_no.trim()) {
+      const fieldName = entity_type === 'individual' ? 'IC number' : 'Company registration number';
+      newErrors.company_registration_no = `${fieldName} is required`;
+    } else if (entity_type === 'company') {
+      // Company: exactly 12 digits
+      if (!/^\d{12}$/.test(formData.company_registration_no)) {
+        newErrors.company_registration_no = 'Company registration number must be exactly 12 digits';
+      }
+    } else if (entity_type === 'individual') {
+      // Individual: Malaysian IC format YYMMDD-PB-####
+      if (!/^\d{6}-\d{2}-\d{4}$/.test(formData.company_registration_no)) {
+        newErrors.company_registration_no = 'Please enter a valid IC number (format: YYMMDD-PB-####)';
+      }
+    }
+
+    // TIN Number validation (conditional)
     if (!formData.tin_number.trim()) {
       newErrors.tin_number = 'TIN number is required';
-    } else if (!/^\d{12}$/.test(formData.tin_number)) {
-      newErrors.tin_number = 'TIN number must be exactly 12 digits';
+    } else if (entity_type === 'individual') {
+      // Individual: exactly 11 digits (IG prefix added automatically)
+      if (!/^\d{11}$/.test(formData.tin_number)) {
+        newErrors.tin_number = 'TIN must be exactly 11 digits';
+      }
+    } else if (entity_type === 'company') {
+      // Company: C followed by 10-11 digits
+      if (!/^C\d{10,11}$/.test(formData.tin_number)) {
+        newErrors.tin_number = 'TIN must start with C followed by 10-11 digits';
+      }
     }
 
+    // Business Activity Code validation
     if (!formData.business_activity_code.trim()) {
       newErrors.business_activity_code = 'Business activity code is required';
-    } else if (formData.business_activity_code.length > 10) {
-      newErrors.business_activity_code = 'Business activity code must be 10 characters or less';
     }
 
+    // SST Registration Number validation (optional)
     if (formData.sst_registration_no && formData.sst_registration_no.length > 50) {
       newErrors.sst_registration_no = 'SST registration number must be 50 characters or less';
     }
