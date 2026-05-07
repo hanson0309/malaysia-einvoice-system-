@@ -9,8 +9,11 @@ import RegisterStep3 from '../components/register/RegisterStep3';
 import '../styles/login.css';
 
 export default function RegisterPage() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
+    // Entity type
+    entity_type: '' as 'individual' | 'company' | '',
+
     // Step 1
     company_name: '',
     email: '',
