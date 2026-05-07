@@ -221,6 +221,8 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
             isLoading={isLoadingMsic}
             isSearchable={true}
             isClearable={true}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
             styles={{
               control: (base) => ({
                 ...base,
@@ -232,11 +234,14 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
                   borderColor: 'var(--gold)'
                 }
               }),
+              menuPortal: (base) => ({
+                ...base,
+                zIndex: 9999
+              }),
               menu: (base) => ({
                 ...base,
                 background: 'var(--navy-dark)',
-                border: '1px solid var(--navy-mid)',
-                zIndex: 9999
+                border: '1px solid var(--navy-mid)'
               }),
               option: (base, state) => ({
                 ...base,
