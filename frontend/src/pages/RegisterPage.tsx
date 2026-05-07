@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import ProgressIndicator from '../components/register/ProgressIndicator';
+import RegisterStep0 from '../components/register/RegisterStep0';
 import RegisterStep1 from '../components/register/RegisterStep1';
 import RegisterStep2 from '../components/register/RegisterStep2';
 import RegisterStep3 from '../components/register/RegisterStep3';
@@ -144,7 +145,17 @@ export default function RegisterPage() {
               </motion.div>
             )}
 
-            <ProgressIndicator currentStep={currentStep} totalSteps={3} />
+            <ProgressIndicator currentStep={currentStep} totalSteps={4} />
+
+            {currentStep === 0 && (
+              <RegisterStep0
+                formData={{
+                  entity_type: formData.entity_type
+                }}
+                onChange={handleFieldChange}
+                onNext={handleNext}
+              />
+            )}
 
             {currentStep === 1 && (
               <RegisterStep1
