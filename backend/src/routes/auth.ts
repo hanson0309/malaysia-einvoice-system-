@@ -11,9 +11,10 @@ import { Tenant, User } from '../models';
 const router = Router();
 
 const registerSchema = z.object({
+  entity_type: z.enum(['individual', 'company']),
   company_name: z.string().min(1).max(200),
   company_registration_no: z.string().min(1).max(50),
-  tin_number: z.string().length(12),
+  tin_number: z.string().min(1).max(20),
   business_activity_code: z.string().min(1).max(10),
   address_line1: z.string().min(1).max(200),
   address_line2: z.string().max(200).optional(),
@@ -46,8 +47,12 @@ router.post('/register', async (req, res, next) => {
     // Hash password
     const password_hash = await bcrypt.hash(data.password, 12);
 
+    // Convert entity_type to type: 1 = individual, 2 = company
+    const type = data.entity_type === 'individual' ? 1 : 2;
+
     // Create tenant
     const tenant = await Tenant.create({
+      type,
       company_name: data.company_name,
       company_registration_no: data.company_registration_no,
       tin_number: data.tin_number,
@@ -89,7 +94,7 @@ router.post('/register', async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    logger.info('New tenant registered', { tenant_id: tenant._id, email: data.email });
+    logger.info('New tenant registered', { tenant_id: tenant._id, email: data.email, type });
 
     res.status(201).json({
       access_token,

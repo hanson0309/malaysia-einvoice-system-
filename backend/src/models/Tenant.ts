@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITenant extends Document {
+  type: number; // 1 = individual, 2 = company
   company_name: string;
   company_registration_no: string;
   tin_number: string;
@@ -25,6 +26,7 @@ export interface ITenant extends Document {
 
 const TenantSchema = new Schema<ITenant>(
   {
+    type: { type: Number, required: true, enum: [1, 2] }, // 1 = individual, 2 = company
     company_name: { type: String, required: true, maxlength: 200 },
     company_registration_no: { type: String, required: true, maxlength: 50 },
     tin_number: { type: String, required: true, maxlength: 20 },
