@@ -236,7 +236,7 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
               }),
               menuPortal: (base) => ({
                 ...base,
-                zIndex: 9999
+                zIndex: 99999
               }),
               menu: (base) => ({
                 ...base,
@@ -296,7 +296,7 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
         )}
       </div>
 
-      <div className="form-actions">
+      <div className="form-actions" style={{ position: 'relative', zIndex: 1 }}>
         <button
           type="button"
           className="btn-secondary"
