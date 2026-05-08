@@ -294,6 +294,15 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
   // 这里需要根据 IRB UBL 2.1 格式构建文档
   // 简化版本，实际需要完整实现
 
+  // Determine supplier identification based on entity type
+  // Type 1 (individual) = use NRIC, Type 2 (company) = use TIN
+  const supplierIdScheme = tenant.type === 1 ? "NRIC" : "TIN";
+  const supplierIdValue = tenant.type === 1 ? tenant.company_registration_no : tenant.tin_number;
+
+  console.log('Building document for tenant type:', tenant.type);
+  console.log('Supplier ID scheme:', supplierIdScheme);
+  console.log('Supplier ID value:', supplierIdValue);
+
   const document = {
     _D: "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
     _A: "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
@@ -312,7 +321,7 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
             Party: [
               {
                 PartyIdentification: [
-                  { ID: [{ _: tenant.tin_number, schemeID: "TIN" }] }
+                  { ID: [{ _: supplierIdValue, schemeID: supplierIdScheme }] }
                 ],
                 PostalAddress: [
                   {
