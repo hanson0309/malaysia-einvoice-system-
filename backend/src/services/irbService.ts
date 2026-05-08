@@ -113,6 +113,38 @@ class IRBService {
   }
 
   /**
+   * 验证纳税人 (Validate Taxpayer)
+   */
+  async validateTaxpayer(
+    idType: string,
+    idValue: string,
+    tin: string,
+    accessToken: string
+  ): Promise<any> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/api/v1.0/taxpayer/validate`,
+        {
+          idType: idType,
+          idValue: idValue,
+          tin: tin
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Taxpayer validation error:', error.response?.data || error.message);
+      throw new Error(`Failed to validate taxpayer: ${error.message}`);
+    }
+  }
+
+  /**
    * 提交发票到 IRB
    */
   async submitDocument(

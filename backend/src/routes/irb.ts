@@ -83,6 +83,29 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
     );
     console.log('Access token obtained');
 
+    // 验证纳税人 (Validate Taxpayer)
+    console.log('Step 5.5: Validating taxpayer');
+    const idType = tenant.type === 1 ? 'NRIC' : 'BRN'; // NRIC for individual, BRN for company
+    const idValue = tenant.type === 1 ? tenant.company_registration_no : tenant.company_registration_no;
+    console.log('Validating with:', { idType, idValue, tin: tenant.tin_number });
+
+    try {
+      const validationResult = await irbService.validateTaxpayer(
+        idType,
+        idValue,
+        tenant.tin_number,
+        accessToken
+      );
+      console.log('Taxpayer validation result:', validationResult);
+    } catch (validationError: any) {
+      console.error('Taxpayer validation failed:', validationError.message);
+      return res.status(400).json({
+        success: false,
+        error: 'Taxpayer validation failed',
+        details: validationError.message
+      });
+    }
+
     // 构建 IRB 发票格式
     console.log('Step 6: Building IRB document');
     const irbDocument = await buildIRBDocument(invoice, tenant);
