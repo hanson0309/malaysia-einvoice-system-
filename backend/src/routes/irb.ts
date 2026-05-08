@@ -105,9 +105,15 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
 
   } catch (error: any) {
     console.error('IRB submission error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     return res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      details: error.response?.data
     });
   }
 });
