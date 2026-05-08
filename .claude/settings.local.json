@@ -65,7 +65,11 @@
       "Bash(sed -i \"s/color: '#5b21b6'/color: '#c4b5fd'/g\" DashboardPage.tsx)",
       "Bash(sed -i \"s/background: 'linear-gradient\\(135deg, #f8fafc 0%, #ffffff 50%, rgba\\(139, 92, 246, 0.05\\) 100%\\)'/background: 'linear-gradient\\(135deg, #0f172a 0%, #1e293b 50%, #334155 100%\\)'/g\" DashboardLayout.tsx)",
       "Bash(sed -i \"s/color: '#1e293b'/color: '#f1f5f9'/g\" DashboardLayout.tsx)",
-      "Bash(sed -i \"s/color: '#64748b'/color: '#94a3b8'/g\" DashboardLayout.tsx)"
+      "Bash(sed -i \"s/color: '#64748b'/color: '#94a3b8'/g\" DashboardLayout.tsx)",
+      "Bash(find public *)",
+      "Bash(find src *)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f \"node.*vite\")"
     ]
   }
 }

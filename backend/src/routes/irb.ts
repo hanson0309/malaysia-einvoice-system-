@@ -16,32 +16,45 @@ router.use(extractTenant);
  * 提交单个发票到 IRB
  */
 router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
+  console.log('=== IRB SUBMIT ENDPOINT CALLED ===');
+  console.log('Invoice ID:', req.params.invoiceId);
+  console.log('Tenant ID from request:', req.tenantId);
+
   try {
     const { invoiceId } = req.params;
     const tenantId = req.tenantId;
 
+    console.log('Step 1: Checking tenant ID');
     if (!tenantId) {
+      console.log('ERROR: Tenant ID not found');
       return res.status(400).json({ error: 'Tenant ID not found' });
     }
 
     // 获取发票数据
+    console.log('Step 2: Fetching invoice from database');
     const invoice = await Invoice.findOne({ _id: invoiceId, tenant_id: tenantId })
       .populate('customer_id')
       .populate('items.product_id');
 
     if (!invoice) {
+      console.log('ERROR: Invoice not found');
       return res.status(404).json({ error: 'Invoice not found' });
     }
+    console.log('Invoice found:', invoice.invoice_number);
 
     // 获取租户信息（包含 IRB 凭证）
+    console.log('Step 3: Fetching tenant information');
     const tenant = await Tenant.findById(tenantId);
+    console.log('Tenant found:', tenant?.company_name);
 
     // Get credentials: try tenant first, then environment variables
+    console.log('Step 4: Getting credentials');
     let clientId: string;
     let clientSecret: string;
 
     if (tenant?.myinvois_client_id && tenant?.myinvois_client_secret) {
       // Use tenant-specific credentials
+      console.log('Using tenant-specific credentials');
       clientId = tenant.myinvois_client_id;
       clientSecret = irbService.decrypt(
         tenant.myinvois_client_secret,
@@ -49,8 +62,10 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
       );
     } else {
       // Fall back to environment variables
+      console.log('Using environment credentials');
       const envCreds = irbService.getEnvironmentCredentials();
       if (!envCreds) {
+        console.log('ERROR: No credentials configured');
         return res.status(400).json({
           error: 'IRB credentials not configured. Please add credentials to tenant or environment variables.'
         });
@@ -58,22 +73,29 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
       clientId = envCreds.clientId;
       clientSecret = envCreds.clientSecret;
     }
+    console.log('Client ID:', clientId);
 
     // 获取 OAuth token
+    console.log('Step 5: Getting OAuth token');
     const accessToken = await irbService.getToken(
       clientId,
       clientSecret
     );
+    console.log('Access token obtained');
 
     // 构建 IRB 发票格式
+    console.log('Step 6: Building IRB document');
     const irbDocument = await buildIRBDocument(invoice, tenant);
+    console.log('IRB document built');
 
     // 提交到 IRB
+    console.log('Step 7: Submitting to IRB');
     const result = await irbService.submitDocument(
       irbDocument,
       invoice.invoice_number,
       accessToken
     );
+    console.log('IRB submission result:', JSON.stringify(result, null, 2));
 
     // 处理响应
     if (result.acceptedDocuments && result.acceptedDocuments.length > 0) {
