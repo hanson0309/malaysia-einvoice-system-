@@ -47,6 +47,11 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
     const tenant = await Tenant.findById(tenantId);
     console.log('Tenant found:', tenant?.company_name);
 
+    if (!tenant) {
+      console.log('ERROR: Tenant not found');
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
     // Get credentials: try tenant first, then environment variables
     console.log('Step 4: Getting credentials');
     let clientId: string;
