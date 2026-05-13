@@ -48,6 +48,11 @@ class IRBService {
    */
   async getToken(clientId: string, clientSecret: string): Promise<string> {
     try {
+      console.log('=== IRB TOKEN REQUEST ===');
+      console.log('Base URL:', this.baseUrl);
+      console.log('Client ID:', clientId);
+      console.log('Client Secret:', clientSecret ? '***' + clientSecret.slice(-4) : 'NOT SET');
+
       const response = await axios.post(
         `${this.baseUrl}/connect/token`,
         new URLSearchParams({
@@ -63,8 +68,15 @@ class IRBService {
         }
       );
 
+      console.log('Token obtained successfully');
       return response.data.access_token;
     } catch (error: any) {
+      console.error('=== IRB TOKEN ERROR ===');
+      console.error('Status:', error.response?.status);
+      console.error('Status Text:', error.response?.statusText);
+      console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Headers:', error.response?.headers);
+
       if (error.response?.status === 429) {
         // Rate limit - retry after delay
         const resetTime = error.response.headers['x-rate-limit-reset'];
@@ -76,7 +88,9 @@ class IRBService {
           }
         }
       }
-      throw new Error(`Failed to get IRB token: ${error.message}`);
+
+      const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      throw new Error(`Failed to get IRB token: ${errorDetails}`);
     }
   }
 
@@ -161,6 +175,13 @@ class IRBService {
         .digest('hex')
         .toUpperCase();
 
+      console.log('=== SUBMITTING DOCUMENT ===');
+      console.log('Code Number:', codeNumber);
+      console.log('Document Hash:', documentHash);
+      console.log('Base64 length:', base64String.length);
+      console.log('Full Document JSON:');
+      console.log(jsonString);
+
       const response = await axios.post(
         `${this.baseUrl}/api/v1.0/documentsubmissions/`,
         {
@@ -181,8 +202,16 @@ class IRBService {
         }
       );
 
+      console.log('=== SUBMISSION RESPONSE ===');
+      console.log('Status:', response.status);
+      console.log('Data:', JSON.stringify(response.data, null, 2));
+
       return response.data;
     } catch (error: any) {
+      console.error('=== SUBMISSION ERROR ===');
+      console.error('Status:', error.response?.status);
+      console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+
       if (error.response) {
         return error.response.data;
       }
