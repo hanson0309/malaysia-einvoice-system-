@@ -241,6 +241,60 @@ class IRBService {
   }
 
   /**
+   * 轮询 IRB 状态直到 Valid 或 Invalid
+   * 跟 server.js 的 pollAndSaveStatus 一样
+   */
+  async pollDocumentStatus(
+    uuid: string,
+    accessToken: string,
+    maxAttempts: number = 10,
+    delayMs: number = 5000
+  ): Promise<any> {
+    let attempt = 0;
+    let status = '';
+    let lastResponse: any = null;
+
+    console.log(`Starting to poll document ${uuid} status...`);
+
+    while (attempt < maxAttempts) {
+      try {
+        const response = await axios.get(
+          `${this.baseUrl}/api/v1.0/documents/${uuid}/details`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+
+        lastResponse = response.data;
+        status = lastResponse.status;
+
+        console.log(`Poll attempt ${attempt + 1}/${maxAttempts}: Status = ${status}`);
+
+        // 如果状态是 Valid 或 Invalid，停止轮询
+        if (status === 'Valid' || status === 'Invalid') {
+          console.log(`Final status reached: ${status}`);
+          break;
+        }
+      } catch (error: any) {
+        console.error(`Error polling IRB status (attempt ${attempt + 1}):`, error.message);
+      }
+
+      // 等待后再次尝试
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      attempt++;
+    }
+
+    if (status !== 'Valid' && status !== 'Invalid') {
+      console.warn(`Polling timed out after ${maxAttempts} attempts. Last status: ${status}`);
+    }
+
+    return lastResponse;
+  }
+
+  /**
    * 解密敏感数据
    */
   decrypt(encryptedData: string, accountId: string): string {

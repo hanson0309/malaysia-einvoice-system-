@@ -62,6 +62,7 @@ export default function InvoicesPage() {
       'draft': 'draft',
       'pending': 'submitted',
       'submitted': 'submitted',
+      'accepted': 'validated',  // ✅ 添加这个映射
       'validated': 'validated',
       'rejected': 'rejected',
       'sent': 'submitted',

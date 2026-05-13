@@ -131,16 +131,69 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
     if (result.acceptedDocuments && result.acceptedDocuments.length > 0) {
       const uuid = result.acceptedDocuments[0].uuid;
 
-      // 更新发票状态
+      console.log('Step 8: Document accepted, UUID:', uuid);
+      console.log('Step 9: Polling IRB status until Valid/Invalid...');
+
+      // 轮询 IRB 状态，跟 server.js 一样
+      const finalStatus = await irbService.pollDocumentStatus(
+        uuid,
+        accessToken,
+        10,  // maxAttempts
+        5000 // delayMs (5 seconds)
+      );
+
+      console.log('Step 10: Final status received:', JSON.stringify(finalStatus, null, 2));
+
+      // 更新发票状态和签名信息
       invoice.lhdn_submission_uid = uuid;
-      invoice.status = 'submitted';
       invoice.lhdn_submitted_at = new Date();
+
+      if (finalStatus.status === 'Valid') {
+        invoice.status = 'accepted';
+        // 保存签名信息（longId 就是 signature）
+        if (finalStatus.longId) {
+          invoice.lhdn_validation_code = finalStatus.longId;
+          console.log('✅ Signature (longId) saved:', finalStatus.longId);
+        }
+        // 保存 QR code URL
+        if (finalStatus.qrCodeUrl) {
+          invoice.lhdn_qr_code = finalStatus.qrCodeUrl;
+          console.log('✅ QR Code URL saved:', finalStatus.qrCodeUrl);
+        }
+        console.log('Invoice validated successfully by IRB');
+      } else if (finalStatus.status === 'Invalid') {
+        invoice.status = 'rejected';
+        console.log('Invoice rejected by IRB');
+
+        // 打印详细的验证错误
+        if (finalStatus.validationResults?.validationSteps) {
+          finalStatus.validationResults.validationSteps.forEach((step: any) => {
+            if (step.status === 'Invalid') {
+              console.log('\n=== VALIDATION ERROR DETAILS ===');
+              console.log('Step:', step.name);
+              console.log('Error:', JSON.stringify(step.error, null, 2));
+            }
+          });
+        }
+      } else {
+        invoice.status = 'submitted';
+        console.log('Invoice submitted but status still pending');
+      }
+
       await invoice.save();
 
       return res.json({
         success: true,
         uuid: uuid,
-        message: 'Invoice submitted successfully'
+        status: finalStatus.status,
+        longId: finalStatus.longId,
+        qrCodeUrl: finalStatus.qrCodeUrl,
+        validationResults: finalStatus.validationResults,
+        message: finalStatus.status === 'Valid'
+          ? 'Invoice submitted and validated successfully'
+          : finalStatus.status === 'Invalid'
+          ? 'Invoice submitted but validation failed'
+          : 'Invoice submitted, validation pending'
       });
     } else if (result.rejectedDocuments && result.rejectedDocuments.length > 0) {
       return res.status(400).json({
@@ -355,8 +408,16 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
         ID: [{ _: invoice.invoice_number }],
         IssueDate: [{ _: issueDate }],
         IssueTime: [{ _: issueTime }],
-        InvoiceTypeCode: [{ _: "01", listVersionID: "1.1" }],
+        InvoiceTypeCode: [{ _: "01", listVersionID: "1.0" }],
         DocumentCurrencyCode: [{ _: "MYR" }],
+
+        // Signature placeholder (required for v1.0, validation disabled)
+        Signature: [
+          {
+            ID: [{ _: "urn:oasis:names:specification:ubl:signature:Invoice" }],
+            SignatureMethod: [{ _: "urn:oasis:names:specification:ubl:dsig:enveloped:xades" }]
+          }
+        ],
 
         // Supplier Party
         AccountingSupplierParty: [

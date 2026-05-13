@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, FileText, X } from 'lucide-react';
+import { Plus, Trash2, FileText, X, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi, customerApi, productApi } from '../lib/api';
 
@@ -37,7 +37,17 @@ export default function InvoiceFormPage() {
 
   useEffect(() => {
     loadData();
+    generateInvoiceNumber();
   }, []);
+
+  const generateInvoiceNumber = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const invoiceNumber = `INV-${year}${month}-${random}`;
+    setFormData(prev => ({ ...prev, invoice_number: invoiceNumber }));
+  };
 
   const loadData = async () => {
     try {
@@ -115,7 +125,7 @@ export default function InvoiceFormPage() {
     return { subtotal, tax, total };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -134,6 +144,7 @@ export default function InvoiceFormPage() {
         exchange_rate: formData.exchange_rate,
         payment_method: formData.payment_method || undefined,
         payment_terms: formData.payment_terms || undefined,
+        status: saveAsDraft ? 'draft' : 'pending',
         items: lineItems.map(item => ({
           product_id: item.product || undefined,
           description: item.description,
@@ -265,14 +276,36 @@ export default function InvoiceFormPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
             <div>
               <label style={labelStyle}>Invoice Number *</label>
-              <input
-                type="text"
-                required
-                value={formData.invoice_number}
-                onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                style={inputStyle}
-                placeholder="INV-2026-001"
-              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  required
+                  value={formData.invoice_number}
+                  onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="INV-2026-001"
+                />
+                <motion.button
+                  type="button"
+                  onClick={generateInvoiceNumber}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'rgba(139, 92, 246, 0.2)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: '0.75rem',
+                    color: '#a78bfa',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  whileHover={{ scale: 1.05, background: 'rgba(139, 92, 246, 0.3)' }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Generate new invoice number"
+                >
+                  <RefreshCw style={{ width: '18px', height: '18px' }} />
+                </motion.button>
+              </div>
             </div>
 
             <div>
@@ -301,10 +334,32 @@ export default function InvoiceFormPage() {
                 <option value="">Select customer</option>
                 {customers.map((customer) => (
                   <option key={customer._id} value={customer._id}>
-                    {customer.name}
+                    {customer.name} {customer.tin_number ? `(TIN: ${customer.tin_number})` : ''} {customer.email ? `- ${customer.email}` : ''}
                   </option>
                 ))}
               </select>
+              {formData.customer_id && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  padding: '0.5rem',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  borderRadius: '0.5rem'
+                }}>
+                  {(() => {
+                    const selectedCustomer = customers.find(c => c._id === formData.customer_id);
+                    if (!selectedCustomer) return null;
+                    return (
+                      <>
+                        <div><strong>Type:</strong> {selectedCustomer.customer_type}</div>
+                        {selectedCustomer.phone && <div><strong>Phone:</strong> {selectedCustomer.phone}</div>}
+                        {selectedCustomer.address_line1 && <div><strong>Address:</strong> {selectedCustomer.address_line1}</div>}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             <div>
@@ -568,11 +623,30 @@ export default function InvoiceFormPage() {
               Cancel
             </motion.button>
             <motion.button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              disabled={isLoading}
+              style={{
+                padding: '0.875rem 1.75rem',
+                background: isLoading ? 'rgba(139, 92, 246, 0.5)' : 'rgba(139, 92, 246, 0.2)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                borderRadius: '0.75rem',
+                color: '#a78bfa',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: isLoading ? 'not-allowed' : 'pointer'
+              }}
+              whileHover={!isLoading ? { scale: 1.05, background: 'rgba(139, 92, 246, 0.3)' } : {}}
+              whileTap={!isLoading ? { scale: 0.95 } : {}}
+            >
+              {isLoading ? 'Saving...' : 'Save as Draft'}
+            </motion.button>
+            <motion.button
               type="submit"
               disabled={isLoading}
               style={{
                 padding: '0.875rem 1.75rem',
-                background: isLoading ? 'rgba(139, 92, 246, 0.5)' : 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                background: isLoading ? 'rgba(245, 158, 11, 0.5)' : 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
                 border: 'none',
                 borderRadius: '0.75rem',
                 color: 'white',

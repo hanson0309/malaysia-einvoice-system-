@@ -70,10 +70,26 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
     if (!confirm('确认提交此发票到 MyInvois IRB？\n提交后将无法撤销。')) return;
 
     try {
-      await irbApi.submitInvoice(invoiceId);
-      alert('发票已成功提交到 IRB！');
+      const response = await irbApi.submitInvoice(invoiceId);
+
+      // 显示详细结果
+      if (response.data.status === 'Valid') {
+        alert(`✅ 发票已成功提交并验证！\n\nUUID: ${response.data.uuid}\nSignature: ${response.data.longId}\n\n状态已更新为 "accepted"`);
+      } else if (response.data.status === 'Invalid') {
+        alert(`⚠️ 发票已提交但验证失败\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status}`);
+      } else {
+        alert(`发票已提交到 IRB\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status || 'pending'}`);
+      }
+
       await loadInvoice();
       onUpdate();
+
+      // 如果成功，2秒后自动关闭 Modal
+      if (response.data.status === 'Valid') {
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || '提交失败';
 
