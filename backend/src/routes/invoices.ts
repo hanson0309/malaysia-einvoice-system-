@@ -178,11 +178,11 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
         deleted_at: null,
       },
       { deleted_at: new Date() },
-      { new: true }
+      { returnDocument: 'after' }  // ✅ 修复 Mongoose 警告
     );
 
     if (!invoice) {
-      throw new NotFoundError('Invoice not found or cannot be deleted');
+      throw new NotFoundError('Invoice not found or cannot be deleted. Only draft invoices can be deleted.');
     }
 
     res.status(204).send();

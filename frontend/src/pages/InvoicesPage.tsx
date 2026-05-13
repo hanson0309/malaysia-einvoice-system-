@@ -548,25 +548,28 @@ export default function InvoicesPage() {
                           >
                             <Eye style={{ width: '16px', height: '16px' }} />
                           </motion.button>
-                          <motion.button
-                            onClick={() => handleDelete(invoice.id)}
-                            style={{
-                              padding: '0.5rem',
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                              borderRadius: '0.5rem',
-                              color: '#f87171',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            whileHover={{ scale: 1.1, background: 'rgba(239, 68, 68, 0.2)' }}
-                            whileTap={{ scale: 0.9 }}
-                            title="Delete"
-                          >
-                            <Trash2 style={{ width: '16px', height: '16px' }} />
-                          </motion.button>
+                          {/* Only show delete button for draft invoices */}
+                          {invoice.status === 'draft' && (
+                            <motion.button
+                              onClick={() => handleDelete(invoice.id)}
+                              style={{
+                                padding: '0.5rem',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '0.5rem',
+                                color: '#f87171',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              whileHover={{ scale: 1.1, background: 'rgba(239, 68, 68, 0.2)' }}
+                              whileTap={{ scale: 0.9 }}
+                              title="Delete"
+                            >
+                              <Trash2 style={{ width: '16px', height: '16px' }} />
+                            </motion.button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
