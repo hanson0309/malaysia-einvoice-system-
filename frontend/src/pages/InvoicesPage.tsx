@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Trash2, Search, FileText, Filter } from 'lucide-react';
+import { Plus, Eye, Trash2, Search, FileText, Filter, CheckSquare, Square, Send, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invoiceApi } from '../lib/api';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
@@ -20,6 +20,8 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
 
   useEffect(() => {
     loadInvoices();
@@ -81,6 +83,84 @@ export default function InvoicesPage() {
     } catch (error) {
       console.error('Failed to delete invoice:', error);
       alert('Failed to delete invoice');
+    }
+  };
+
+  const toggleSelectInvoice = (id: string) => {
+    const newSelected = new Set(selectedInvoices);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedInvoices(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedInvoices.size === filteredInvoices.length) {
+      setSelectedInvoices(new Set());
+    } else {
+      setSelectedInvoices(new Set(filteredInvoices.map(inv => inv.id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    const draftInvoices = Array.from(selectedInvoices).filter(id => {
+      const invoice = invoices.find(inv => inv.id === id);
+      return invoice?.status === 'draft';
+    });
+
+    if (draftInvoices.length === 0) {
+      alert('Only draft invoices can be deleted');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${draftInvoices.length} invoice(s)?`)) return;
+
+    try {
+      await Promise.all(draftInvoices.map(id => invoiceApi.delete(id)));
+      setSelectedInvoices(new Set());
+      await loadInvoices();
+    } catch (error) {
+      console.error('Failed to delete invoices:', error);
+      alert('Failed to delete some invoices');
+    }
+  };
+
+  const handleBatchSubmit = async () => {
+    const selectedIds = Array.from(selectedInvoices);
+    if (selectedIds.length === 0) {
+      alert('Please select at least one invoice');
+      return;
+    }
+
+    if (!confirm(`Submit ${selectedIds.length} invoice(s) to IRB?`)) return;
+
+    setBatchSubmitting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map(id => invoiceApi.submitToIRB(id))
+      );
+
+      results.forEach(result => {
+        if (result.status === 'fulfilled') {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      });
+
+      alert(`Submitted: ${successCount} succeeded, ${failCount} failed`);
+      setSelectedInvoices(new Set());
+      await loadInvoices();
+    } catch (error) {
+      console.error('Batch submit failed:', error);
+      alert('Batch submission failed');
+    } finally {
+      setBatchSubmitting(false);
     }
   };
 
@@ -260,6 +340,72 @@ export default function InvoicesPage() {
           />
         </div>
 
+        {/* Batch Actions */}
+        {selectedInvoices.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+          >
+            <span style={{
+              fontSize: '0.875rem',
+              color: '#94a3b8',
+              fontWeight: 500
+            }}>
+              {selectedInvoices.size} selected
+            </span>
+
+            <motion.button
+              onClick={handleBatchSubmit}
+              disabled={batchSubmitting}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.25rem',
+                background: batchSubmitting
+                  ? 'rgba(59, 130, 246, 0.3)'
+                  : 'rgba(59, 130, 246, 0.2)',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                borderRadius: '0.75rem',
+                color: '#60a5fa',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: batchSubmitting ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+              whileHover={!batchSubmitting ? { scale: 1.05 } : {}}
+              whileTap={!batchSubmitting ? { scale: 0.95 } : {}}
+            >
+              <Send style={{ width: '16px', height: '16px' }} />
+              {batchSubmitting ? 'Submitting...' : 'Submit to IRB'}
+            </motion.button>
+
+            <motion.button
+              onClick={handleBatchDelete}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.25rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                borderRadius: '0.75rem',
+                color: '#f87171',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Trash2 style={{ width: '16px', height: '16px' }} />
+              Delete
+            </motion.button>
+          </motion.div>
+        )}
+
         {/* New Invoice Button */}
         <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
           <motion.button
@@ -389,6 +535,37 @@ export default function InvoicesPage() {
                 <tr style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
                   <th style={{
                     padding: '1rem 1.5rem',
+                    textAlign: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                    width: '50px'
+                  }}>
+                    <motion.button
+                      onClick={toggleSelectAll}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#94a3b8'
+                      }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {selectedInvoices.size === filteredInvoices.length && filteredInvoices.length > 0 ? (
+                        <CheckSquare style={{ width: '18px', height: '18px' }} />
+                      ) : (
+                        <Square style={{ width: '18px', height: '18px' }} />
+                      )}
+                    </motion.button>
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
                     textAlign: 'left',
                     fontSize: '0.75rem',
                     fontWeight: 600,
@@ -478,6 +655,32 @@ export default function InvoicesPage() {
                     >
                       <td style={{
                         padding: '1rem 1.5rem',
+                        textAlign: 'center'
+                      }}>
+                        <motion.button
+                          onClick={() => toggleSelectInvoice(invoice.id)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: selectedInvoices.has(invoice.id) ? '#8b5cf6' : '#94a3b8'
+                          }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {selectedInvoices.has(invoice.id) ? (
+                            <CheckSquare style={{ width: '18px', height: '18px' }} />
+                          ) : (
+                            <Square style={{ width: '18px', height: '18px' }} />
+                          )}
+                        </motion.button>
+                      </td>
+                      <td style={{
+                        padding: '1rem 1.5rem',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         color: '#f1f5f9'
@@ -547,6 +750,29 @@ export default function InvoicesPage() {
                             title="View"
                           >
                             <Eye style={{ width: '16px', height: '16px' }} />
+                          </motion.button>
+                          <motion.button
+                            onClick={() => {
+                              const token = localStorage.getItem('token');
+                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+                              window.open(`${apiUrl}/invoices/${invoice.id}/pdf?token=${token}`, '_blank');
+                            }}
+                            style={{
+                              padding: '0.5rem',
+                              background: 'rgba(139, 92, 246, 0.1)',
+                              border: '1px solid rgba(139, 92, 246, 0.3)',
+                              borderRadius: '0.5rem',
+                              color: '#a78bfa',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            whileHover={{ scale: 1.1, background: 'rgba(139, 92, 246, 0.2)' }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Download PDF"
+                          >
+                            <Download style={{ width: '16px', height: '16px' }} />
                           </motion.button>
                           {/* Only show delete button for draft invoices */}
                           {invoice.status === 'draft' && (

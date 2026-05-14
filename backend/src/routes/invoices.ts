@@ -1,15 +1,80 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticateJWT, AuthRequest } from '../middleware/auth';
+import { authenticateJWT, authenticateFlexible, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
 import { Invoice, Customer } from '../models';
+import { PDFService } from '../services/pdfService';
 import mongoose from 'mongoose';
 
 const router = Router();
 
+// PDF endpoint with flexible auth (before the global middleware)
+router.get('/:id/pdf', authenticateFlexible, extractTenant, async (req: AuthRequest, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    }).populate('customer_id', 'name email phone address_line1 address_line2 city postcode state_code');
+
+    if (!invoice) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    // Calculate totals
+    let subtotal = 0;
+    let totalTax = 0;
+
+    invoice.items.forEach((item: any) => {
+      const itemTotal = item.quantity * item.unit_price;
+      const itemTax = (itemTotal * item.tax_rate) / 100;
+      subtotal += itemTotal;
+      totalTax += itemTax;
+    });
+
+    const total = subtotal + totalTax;
+
+    // Prepare invoice data for PDF
+    const invoiceData = {
+      invoice_number: invoice.invoice_number,
+      invoice_type: invoice.invoice_type,
+      issue_date: invoice.issue_date,
+      due_date: invoice.due_date,
+      customer: {
+        name: (invoice.customer_id as any)?.name || 'Unknown Customer',
+        email: (invoice.customer_id as any)?.email,
+        phone: (invoice.customer_id as any)?.phone,
+        address_line1: (invoice.customer_id as any)?.address_line1,
+        address_line2: (invoice.customer_id as any)?.address_line2,
+        city: (invoice.customer_id as any)?.city,
+        postcode: (invoice.customer_id as any)?.postcode,
+        state_code: (invoice.customer_id as any)?.state_code,
+      },
+      items: invoice.items.map((item: any) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        tax_type: item.tax_type,
+        tax_rate: item.tax_rate,
+      })),
+      subtotal,
+      tax: totalTax,
+      total,
+      currency: invoice.currency || 'MYR',
+      payment_method: invoice.payment_method,
+    };
+
+    // Generate PDF
+    PDFService.generateInvoicePDF(invoiceData, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Apply authentication to all other routes
 router.use(authenticateJWT);
 router.use(extractTenant);
 

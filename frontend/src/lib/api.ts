@@ -72,6 +72,16 @@ export const invoiceApi = {
   create: (data: any) => api.post('/invoices', data),
   submit: (id: string) => api.post(`/invoices/${id}/submit`),
   delete: (id: string) => api.delete(`/invoices/${id}`),
+  submitToIRB: (id: string) => api.post<IRBSubmitResponse>(`/irb/submit/${id}`),
+};
+
+// Invoice Template API
+export const invoiceTemplateApi = {
+  getAll: () => api.get('/invoice-templates'),
+  getById: (id: string) => api.get(`/invoice-templates/${id}`),
+  create: (data: any) => api.post('/invoice-templates', data),
+  update: (id: string, data: any) => api.put(`/invoice-templates/${id}`, data),
+  delete: (id: string) => api.delete(`/invoice-templates/${id}`),
 };
 
 // IRB API Response Types
@@ -80,6 +90,9 @@ export interface IRBSubmitResponse {
   submissionId: string;
   timestamp: string;
   message?: string;
+  status?: string;
+  uuid?: string;
+  longId?: string;
 }
 
 export interface IRBStatusResponse {

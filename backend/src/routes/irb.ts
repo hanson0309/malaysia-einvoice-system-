@@ -16,22 +16,16 @@ router.use(extractTenant);
  * 提交单个发票到 IRB
  */
 router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
-  console.log('=== IRB SUBMIT ENDPOINT CALLED ===');
-  console.log('Invoice ID:', req.params.invoiceId);
-  console.log('Tenant ID from request:', req.tenantId);
-
   try {
     const { invoiceId } = req.params;
     const tenantId = req.tenantId;
 
-    console.log('Step 1: Checking tenant ID');
     if (!tenantId) {
       console.log('ERROR: Tenant ID not found');
       return res.status(400).json({ error: 'Tenant ID not found' });
     }
 
     // 获取发票数据
-    console.log('Step 2: Fetching invoice from database');
     const invoice = await Invoice.findOne({ _id: invoiceId, tenant_id: tenantId })
       .populate('customer_id')
       .populate('items.product_id');
@@ -40,12 +34,9 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
       console.log('ERROR: Invoice not found');
       return res.status(404).json({ error: 'Invoice not found' });
     }
-    console.log('Invoice found:', invoice.invoice_number);
 
     // 获取租户信息（包含 IRB 凭证）
-    console.log('Step 3: Fetching tenant information');
     const tenant = await Tenant.findById(tenantId);
-    console.log('Tenant found:', tenant?.company_name);
 
     if (!tenant) {
       console.log('ERROR: Tenant not found');
@@ -53,21 +44,16 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
     }
 
     // Get credentials: try tenant first, then environment variables
-    console.log('Step 4: Getting credentials');
     let clientId: string;
     let clientSecret: string;
 
     if (tenant?.myinvois_client_id && tenant?.myinvois_client_secret) {
-      // Use tenant-specific credentials
-      console.log('Using tenant-specific credentials');
       clientId = tenant.myinvois_client_id;
       clientSecret = irbService.decrypt(
         tenant.myinvois_client_secret,
         tenantId.toString()
       );
     } else {
-      // Fall back to environment variables
-      console.log('Using environment credentials');
       const envCreds = irbService.getEnvironmentCredentials();
       if (!envCreds) {
         console.log('ERROR: No credentials configured');
@@ -78,71 +64,49 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
       clientId = envCreds.clientId;
       clientSecret = envCreds.clientSecret;
     }
-    console.log('Client ID:', clientId);
 
     // 获取 OAuth token
-    console.log('Step 5: Getting OAuth token');
     const accessToken = await irbService.getToken(
       clientId,
       clientSecret
     );
-    console.log('Access token obtained');
 
     // 验证纳税人 (Validate Taxpayer) - Optional, don't block submission if it fails
-    console.log('Step 5.5: Validating taxpayer');
-    const idType = tenant.type === 1 ? 'NRIC' : 'BRN'; // NRIC for individual, BRN for company
-    // Remove hyphens from NRIC/BRN for API format (e.g., 040309-08-1061 -> 040309081061)
+    const idType = tenant.type === 1 ? 'NRIC' : 'BRN';
     const idValue = tenant.company_registration_no.replace(/-/g, '');
-    console.log('Validating with:', { idType, idValue, tin: tenant.tin_number });
 
     try {
-      const validationResult = await irbService.validateTaxpayer(
+      await irbService.validateTaxpayer(
         idType,
         idValue,
         tenant.tin_number,
         accessToken
       );
-      console.log('Taxpayer validation result:', validationResult);
     } catch (validationError: any) {
-      console.warn('Taxpayer validation failed (continuing anyway):', validationError.message);
-      // Don't block submission - validation is optional and may fail for various reasons
+      console.warn('⚠️ Taxpayer validation failed (continuing anyway):', validationError.message);
     }
 
     // 构建 IRB 发票格式
-    console.log('Step 6: Building IRB document');
     const irbDocument = await buildIRBDocument(invoice, tenant);
-    console.log('IRB document built');
 
     // 提交到 IRB
-    console.log('Step 7: Submitting to IRB');
     const result = await irbService.submitDocument(
       irbDocument,
       invoice.invoice_number,
       accessToken
     );
-    console.log('IRB submission result:', JSON.stringify(result, null, 2));
 
     // 处理响应
-    console.log('Checking submission result structure...');
-    console.log('Has acceptedDocuments?', !!result.acceptedDocuments);
-    console.log('Has rejectedDocuments?', !!result.rejectedDocuments);
-    console.log('Has error?', !!result.error);
-
     if (result.acceptedDocuments && result.acceptedDocuments.length > 0) {
       const uuid = result.acceptedDocuments[0].uuid;
 
-      console.log('Step 8: Document accepted, UUID:', uuid);
-      console.log('Step 9: Polling IRB status until Valid/Invalid...');
-
-      // 轮询 IRB 状态，跟 server.js 一样
+      // 轮询 IRB 状态
       const finalStatus = await irbService.pollDocumentStatus(
         uuid,
         accessToken,
         10,  // maxAttempts
         5000 // delayMs (5 seconds)
       );
-
-      console.log('Step 10: Final status received:', JSON.stringify(finalStatus, null, 2));
 
       // 更新发票状态和签名信息
       invoice.lhdn_submission_uid = uuid;
@@ -153,23 +117,21 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
         // 保存签名信息（longId 就是 signature）
         if (finalStatus.longId) {
           invoice.lhdn_validation_code = finalStatus.longId;
-          console.log('✅ Signature (longId) saved:', finalStatus.longId);
         }
         // 保存 QR code URL
         if (finalStatus.qrCodeUrl) {
           invoice.lhdn_qr_code = finalStatus.qrCodeUrl;
-          console.log('✅ QR Code URL saved:', finalStatus.qrCodeUrl);
         }
-        console.log('Invoice validated successfully by IRB');
+        console.log(`✅ Invoice ${invoice.invoice_number} validated successfully by IRB`);
       } else if (finalStatus.status === 'Invalid') {
         invoice.status = 'rejected';
-        console.log('Invoice rejected by IRB');
+        console.log(`❌ Invoice ${invoice.invoice_number} rejected by IRB`);
 
         // 打印详细的验证错误
         if (finalStatus.validationResults?.validationSteps) {
           finalStatus.validationResults.validationSteps.forEach((step: any) => {
             if (step.status === 'Invalid') {
-              console.log('\n=== VALIDATION ERROR DETAILS ===');
+              console.log('\n=== VALIDATION ERROR ===');
               console.log('Step:', step.name);
               console.log('Error:', JSON.stringify(step.error, null, 2));
             }
@@ -177,7 +139,6 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
         }
       } else {
         invoice.status = 'submitted';
-        console.log('Invoice submitted but status still pending');
       }
 
       await invoice.save();
@@ -389,10 +350,6 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
   const supplierIdScheme = tenant.type === 1 ? "NRIC" : "BRN";
   // Remove hyphens from NRIC/BRN for document format
   const supplierIdValue = tenant.company_registration_no.replace(/-/g, '');
-
-  console.log('Building document for tenant type:', tenant.type);
-  console.log('Supplier ID scheme:', supplierIdScheme);
-  console.log('Supplier ID value:', supplierIdValue);
 
   // Format date and time properly - use current date/time for submission
   const now = new Date();

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Send, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, Send, RefreshCw, X, Download, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi, irbApi } from '../lib/api';
 
@@ -127,6 +127,18 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
     }
   };
 
+  const handleDownloadPDF = () => {
+    const token = localStorage.getItem('token');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+    window.open(`${apiUrl}/invoices/${invoiceId}/pdf?token=${token}`, '_blank');
+  };
+
+  const handlePreviewPDF = () => {
+    const token = localStorage.getItem('token');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+    window.open(`${apiUrl}/invoices/${invoiceId}/pdf?token=${token}`, '_blank');
+  };
+
   if (isLoading || !invoice) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -182,15 +194,33 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
               <span className="text-xs">Back to Invoices</span>
             </button>
 
-            {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleSubmit}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
+                onClick={handlePreviewPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-md transition-colors"
               >
-                <Send className="w-3 h-3" />
-                Submit to IRB
+                <FileText className="w-3 h-3" />
+                Preview PDF
               </button>
-            )}
+
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                Download PDF
+              </button>
+
+              {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
+                <button
+                  onClick={handleSubmit}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
+                >
+                  <Send className="w-3 h-3" />
+                  Submit to IRB
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Scrollable Content Area */}

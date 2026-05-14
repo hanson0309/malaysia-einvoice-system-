@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Send, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { irbApi } from '../lib/api';

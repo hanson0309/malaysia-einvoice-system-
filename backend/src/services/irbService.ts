@@ -48,11 +48,6 @@ class IRBService {
    */
   async getToken(clientId: string, clientSecret: string): Promise<string> {
     try {
-      console.log('=== IRB TOKEN REQUEST ===');
-      console.log('Base URL:', this.baseUrl);
-      console.log('Client ID:', clientId);
-      console.log('Client Secret:', clientSecret ? '***' + clientSecret.slice(-4) : 'NOT SET');
-
       const response = await axios.post(
         `${this.baseUrl}/connect/token`,
         new URLSearchParams({
@@ -68,7 +63,6 @@ class IRBService {
         }
       );
 
-      console.log('Token obtained successfully');
       return response.data.access_token;
     } catch (error: any) {
       console.error('=== IRB TOKEN ERROR ===');
@@ -175,13 +169,6 @@ class IRBService {
         .digest('hex')
         .toUpperCase();
 
-      console.log('=== SUBMITTING DOCUMENT ===');
-      console.log('Code Number:', codeNumber);
-      console.log('Document Hash:', documentHash);
-      console.log('Base64 length:', base64String.length);
-      console.log('Full Document JSON:');
-      console.log(jsonString);
-
       const response = await axios.post(
         `${this.baseUrl}/api/v1.0/documentsubmissions/`,
         {
@@ -201,10 +188,6 @@ class IRBService {
           }
         }
       );
-
-      console.log('=== SUBMISSION RESPONSE ===');
-      console.log('Status:', response.status);
-      console.log('Data:', JSON.stringify(response.data, null, 2));
 
       return response.data;
     } catch (error: any) {
@@ -254,7 +237,6 @@ class IRBService {
     let status = '';
     let lastResponse: any = null;
 
-    console.log(`Starting to poll document ${uuid} status...`);
 
     while (attempt < maxAttempts) {
       try {
@@ -271,15 +253,12 @@ class IRBService {
         lastResponse = response.data;
         status = lastResponse.status;
 
-        console.log(`Poll attempt ${attempt + 1}/${maxAttempts}: Status = ${status}`);
-
         // 如果状态是 Valid 或 Invalid，停止轮询
         if (status === 'Valid' || status === 'Invalid') {
-          console.log(`Final status reached: ${status}`);
           break;
         }
       } catch (error: any) {
-        console.error(`Error polling IRB status (attempt ${attempt + 1}):`, error.message);
+        console.error(`❌ Error polling IRB status (attempt ${attempt + 1}):`, error.message);
       }
 
       // 等待后再次尝试
@@ -288,7 +267,7 @@ class IRBService {
     }
 
     if (status !== 'Valid' && status !== 'Invalid') {
-      console.warn(`Polling timed out after ${maxAttempts} attempts. Last status: ${status}`);
+      console.warn(`⚠️ Polling timed out after ${maxAttempts} attempts. Last status: ${status}`);
     }
 
     return lastResponse;

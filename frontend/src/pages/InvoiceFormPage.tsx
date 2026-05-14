@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, FileText, X, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, FileText, X, RefreshCw, Save, FolderOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { invoiceApi, customerApi, productApi } from '../lib/api';
+import { invoiceApi, customerApi, productApi, invoiceTemplateApi } from '../lib/api';
+import TemplateModal from '../components/TemplateModal';
 
 interface LineItem {
   product: string;
@@ -34,6 +35,8 @@ export default function InvoiceFormPage() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateMode, setTemplateMode] = useState<'load' | 'save'>('load');
 
   useEffect(() => {
     loadData();
@@ -163,6 +166,53 @@ export default function InvoiceFormPage() {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to create invoice');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadTemplate = (template: any) => {
+    // Load template data into form
+    setFormData(prev => ({
+      ...prev,
+      invoice_type: template.invoice_type,
+      payment_method: template.payment_method || ''
+    }));
+
+    setLineItems(template.items.map((item: any) => ({
+      product: item.product_id || '',
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      tax_type: item.tax_type as 'SST' | 'E' | 'Z' | 'SR',
+      tax_rate: item.tax_rate,
+      amount: item.quantity * item.unit_price
+    })));
+
+    setShowTemplateModal(false);
+  };
+
+  const handleSaveAsTemplate = async (templateData: { name: string; description: string }) => {
+    try {
+      const templatePayload = {
+        name: templateData.name,
+        description: templateData.description,
+        invoice_type: formData.invoice_type,
+        payment_method: formData.payment_method || undefined,
+        items: lineItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_type: item.tax_type,
+          tax_rate: item.tax_rate,
+          product_id: item.product || undefined
+        }))
+      };
+
+      await invoiceTemplateApi.create(templatePayload);
+      setShowTemplateModal(false);
+      alert('Template saved successfully!');
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      alert('Failed to save template');
     }
   };
 
@@ -624,6 +674,56 @@ export default function InvoiceFormPage() {
             </motion.button>
             <motion.button
               type="button"
+              onClick={() => {
+                setTemplateMode('load');
+                setShowTemplateModal(true);
+              }}
+              style={{
+                padding: '0.875rem 1.75rem',
+                background: 'rgba(59, 130, 246, 0.2)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '0.75rem',
+                color: '#60a5fa',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              whileHover={{ scale: 1.05, background: 'rgba(59, 130, 246, 0.3)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FolderOpen style={{ width: '18px', height: '18px' }} />
+              Load Template
+            </motion.button>
+            <motion.button
+              type="button"
+              onClick={() => {
+                setTemplateMode('save');
+                setShowTemplateModal(true);
+              }}
+              style={{
+                padding: '0.875rem 1.75rem',
+                background: 'rgba(16, 185, 129, 0.2)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '0.75rem',
+                color: '#34d399',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              whileHover={{ scale: 1.05, background: 'rgba(16, 185, 129, 0.3)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Save style={{ width: '18px', height: '18px' }} />
+              Save as Template
+            </motion.button>
+            <motion.button
+              type="button"
               onClick={(e) => handleSubmit(e, true)}
               disabled={isLoading}
               style={{
@@ -662,6 +762,15 @@ export default function InvoiceFormPage() {
           </div>
         </form>
       </motion.div>
+
+      {/* Template Modal */}
+      <TemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelectTemplate={handleLoadTemplate}
+        onSaveAsTemplate={handleSaveAsTemplate}
+        mode={templateMode}
+      />
     </div>
   );
 }
