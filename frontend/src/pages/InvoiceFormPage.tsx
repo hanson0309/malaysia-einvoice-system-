@@ -2,26 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, FileText, X, RefreshCw, Save, FolderOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { invoiceApi, customerApi, productApi, invoiceTemplateApi } from '../lib/api';
+import { invoiceApi, productApi, invoiceTemplateApi } from '../lib/api';
 import TemplateModal from '../components/TemplateModal';
+import { CLASSIFICATION_CODES } from '../constants/classificationCodes';
 
 interface LineItem {
   product: string;
   description: string;
   quantity: number;
   unit_price: number;
-  tax_type: 'SST' | 'E' | 'Z' | 'SR';
+  tax_type: 'SST' | 'E' | 'Z' | 'SR' | 'OE' | 'EXEMPT';
   tax_rate: number;
   amount: number;
 }
 
 export default function InvoiceFormPage() {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     invoice_number: '',
-    invoice_type: '01' as '01' | '02' | '03' | '04',
+    invoice_type: '01' as '01' | '02' | '03' | '04' | '11' | '12' | '13' | '14',
+    classification: 'consolidated' as 'consolidated', // Always consolidated
+    classification_code: '004', // Default to 004 for consolidated
     customer_id: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -31,7 +33,7 @@ export default function InvoiceFormPage() {
     payment_terms: '',
   });
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
+    { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'EXEMPT', tax_rate: 0, amount: 0 },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,30 +56,20 @@ export default function InvoiceFormPage() {
 
   const loadData = async () => {
     try {
-      console.log('Loading customers and products...');
-      const [customersRes, productsRes] = await Promise.all([
-        customerApi.getAll(),
-        productApi.getAll(),
-      ]);
-      console.log('Customers response:', customersRes.data);
+      console.log('Loading products...');
+      const productsRes = await productApi.getAll();
       console.log('Products response:', productsRes.data);
 
       // Handle nested data structure from backend
-      const customersData = Array.isArray(customersRes.data)
-        ? customersRes.data
-        : customersRes.data?.data || [];
       const productsData = Array.isArray(productsRes.data)
         ? productsRes.data
         : productsRes.data?.data || [];
 
-      console.log('Parsed customers:', customersData);
       console.log('Parsed products:', productsData);
 
-      setCustomers(customersData);
       setProducts(productsData);
     } catch (error) {
       console.error('Failed to load data:', error);
-      setCustomers([]);
       setProducts([]);
     }
   };
@@ -111,7 +103,7 @@ export default function InvoiceFormPage() {
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
-      { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
+      { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'EXEMPT', tax_rate: 0, amount: 0 },
     ]);
   };
 
@@ -140,7 +132,8 @@ export default function InvoiceFormPage() {
       const invoiceData = {
         invoice_number: formData.invoice_number,
         invoice_type: formData.invoice_type,
-        customer_id: formData.customer_id,
+        classification: formData.classification,
+        classification_code: formData.classification_code || undefined,
         issue_date: formData.issue_date,
         due_date: formData.due_date || undefined,
         currency: formData.currency,
@@ -366,50 +359,58 @@ export default function InvoiceFormPage() {
                 onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as any })}
                 style={inputStyle}
               >
-                <option value="01">01 - Invoice</option>
-                <option value="02">02 - Credit Note</option>
-                <option value="03">03 - Debit Note</option>
-                <option value="04">04 - Refund Note</option>
+                <option value="01">01 - Invoice (发票)</option>
+                <option value="02">02 - Credit Note (贷项通知单)</option>
+                <option value="03">03 - Debit Note (借项通知单)</option>
+                <option value="04">04 - Refund Note (退款单)</option>
+                <option value="11">11 - Self-billed Invoice (自开发票)</option>
+                <option value="12">12 - Self-billed Credit Note (自开贷项通知单)</option>
+                <option value="13">13 - Self-billed Debit Note (自开借项通知单)</option>
+                <option value="14">14 - Self-billed Refund Note (自开退款单)</option>
               </select>
+              <div style={{
+                marginTop: '0.5rem',
+                fontSize: '0.75rem',
+                color: '#94a3b8',
+                padding: '0.5rem',
+                background: 'rgba(15, 23, 42, 0.5)',
+                borderRadius: '0.5rem'
+              }}>
+                {formData.invoice_type === '01' && 'ℹ️ 标准发票 - 用于销售商品或提供服务'}
+                {formData.invoice_type === '02' && 'ℹ️ 贷项通知单 - 用于退款或价格调整（减少应收款）'}
+                {formData.invoice_type === '03' && 'ℹ️ 借项通知单 - 用于额外收费（增加应收款）'}
+                {formData.invoice_type === '04' && 'ℹ️ 退款单 - 用于退款交易'}
+                {formData.invoice_type === '11' && 'ℹ️ 自开发票 - 买方代卖方开具的发票'}
+                {formData.invoice_type === '12' && 'ℹ️ 自开贷项通知单'}
+                {formData.invoice_type === '13' && 'ℹ️ 自开借项通知单'}
+                {formData.invoice_type === '14' && 'ℹ️ 自开退款单'}
+              </div>
             </div>
 
             <div>
-              <label style={labelStyle}>Customer *</label>
+              <label style={labelStyle}>Classification Code</label>
               <select
-                required
-                value={formData.customer_id}
-                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                value={formData.classification_code}
+                onChange={(e) => setFormData({ ...formData, classification_code: e.target.value })}
                 style={inputStyle}
               >
-                <option value="">Select customer</option>
-                {customers.map((customer) => (
-                  <option key={customer._id} value={customer._id}>
-                    {customer.name} {customer.tin_number ? `(TIN: ${customer.tin_number})` : ''} {customer.email ? `- ${customer.email}` : ''}
+                <option value="">Select classification code (optional)</option>
+                {CLASSIFICATION_CODES.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.code} - {item.description}
                   </option>
                 ))}
               </select>
-              {formData.customer_id && (
-                <div style={{
-                  marginTop: '0.5rem',
-                  fontSize: '0.75rem',
-                  color: '#94a3b8',
-                  padding: '0.5rem',
-                  background: 'rgba(15, 23, 42, 0.5)',
-                  borderRadius: '0.5rem'
-                }}>
-                  {(() => {
-                    const selectedCustomer = customers.find(c => c._id === formData.customer_id);
-                    if (!selectedCustomer) return null;
-                    return (
-                      <>
-                        <div><strong>Type:</strong> {selectedCustomer.customer_type}</div>
-                        {selectedCustomer.phone && <div><strong>Phone:</strong> {selectedCustomer.phone}</div>}
-                        {selectedCustomer.address_line1 && <div><strong>Address:</strong> {selectedCustomer.address_line1}</div>}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+              <div style={{
+                marginTop: '0.5rem',
+                fontSize: '0.75rem',
+                color: '#94a3b8',
+                padding: '0.5rem',
+                background: 'rgba(15, 23, 42, 0.5)',
+                borderRadius: '0.5rem'
+              }}>
+                ℹ️ 默认使用 "004 - Consolidated e-Invoice"。可根据发票用途选择其他分类代码（如教育、医疗等）
+              </div>
             </div>
 
             <div>
@@ -579,11 +580,25 @@ export default function InvoiceFormPage() {
                         onChange={(e) => handleLineItemChange(index, 'tax_type', e.target.value)}
                         style={inputStyle}
                       >
-                        <option value="SST">SST</option>
-                        <option value="E">Exempt</option>
-                        <option value="Z">Zero Rated</option>
-                        <option value="SR">Standard Rated</option>
+                        <option value="EXEMPT">Exempt (个人收入/工资/教育/医疗)</option>
+                        <option value="E">Exempt - E (豁免)</option>
+                        <option value="Z">Zero Rated (零税率 - 出口/基本必需品)</option>
+                        <option value="SST">SST (销售与服务税 6%/10%)</option>
+                        <option value="SR">Standard Rated (标准税率)</option>
+                        <option value="OE">Out of Scope (不在征税范围)</option>
                       </select>
+                      <div style={{
+                        marginTop: '0.25rem',
+                        fontSize: '0.7rem',
+                        color: '#94a3b8'
+                      }}>
+                        {item.tax_type === 'EXEMPT' && '✓ 适用于个人报税项目（工资、教育费、医疗费等）'}
+                        {item.tax_type === 'E' && '✓ 豁免类别'}
+                        {item.tax_type === 'Z' && '✓ 零税率（0%）'}
+                        {item.tax_type === 'SST' && '✓ 商品销售或应税服务'}
+                        {item.tax_type === 'SR' && '✓ 标准税率'}
+                        {item.tax_type === 'OE' && '✓ 不在征税范围'}
+                      </div>
                     </div>
 
                     <div>

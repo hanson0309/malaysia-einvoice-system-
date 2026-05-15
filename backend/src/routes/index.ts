@@ -5,6 +5,7 @@ import productRoutes from './products';
 import invoiceRoutes from './invoices';
 import irbRoutes from './irb';
 import invoiceTemplateRoutes from './invoiceTemplates';
+import classificationCodesRoutes from './classificationCodes';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/products', productRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/irb', irbRoutes);
 router.use('/invoice-templates', invoiceTemplateRoutes);
+router.use('/classification-codes', classificationCodesRoutes);
 
 export default router;
