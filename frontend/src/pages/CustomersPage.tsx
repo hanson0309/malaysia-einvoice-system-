@@ -76,7 +76,7 @@ export default function CustomersPage() {
             alignItems: 'center',
             gap: '0.5rem',
           }}
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
         >
           <Plus style={{ width: '20px', height: '20px' }} />
