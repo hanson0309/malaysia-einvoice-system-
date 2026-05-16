@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, RefreshCw, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invoiceApi, irbApi } from '../lib/api';
+import SendInvoiceModal from '../components/SendInvoiceModal';
+import SendingHistoryPanel from '../components/SendingHistoryPanel';
 
 interface InvoiceData {
   _id: string;
@@ -28,6 +30,8 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [sendingHistoryKey, setSendingHistoryKey] = useState(0);
 
   useEffect(() => {
     loadInvoice();
@@ -150,15 +154,38 @@ export default function InvoiceDetailPage() {
             <span className="text-xs">Back to Invoices</span>
           </button>
 
-          {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
-            <button
-              onClick={handleSubmit}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
+              <button
+                onClick={handleSubmit}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                <Send className="w-3 h-3" />
+                Submit to IRB
+              </button>
+            )}
+
+            <motion.button
+              onClick={() => setIsSendModalOpen(true)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.75rem',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: 'none',
+                color: 'white',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Send className="w-3 h-3" />
-              Submit to IRB
-            </button>
-          )}
+              <Send style={{ width: '18px', height: '18px' }} />
+              Send to Customer
+            </motion.button>
+          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -322,6 +349,35 @@ export default function InvoiceDetailPage() {
           )}
         </div>
       </motion.div>
+
+      {/* Send Invoice Modal */}
+      {invoice && invoice.customer && (
+        <SendInvoiceModal
+          isOpen={isSendModalOpen}
+          onClose={() => setIsSendModalOpen(false)}
+          invoice={{
+            _id: invoice._id,
+            invoice_number: invoice.invoice_number,
+            total_amount: invoice.total_amount,
+          }}
+          customer={{
+            name: invoice.customer.name,
+            email: invoice.customer.email,
+            phone: invoice.customer.phone,
+          }}
+          onSuccess={() => {
+            setSendingHistoryKey((prev) => prev + 1);
+            setIsSendModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Sending History */}
+      {invoice && (
+        <div style={{ marginTop: '2rem' }}>
+          <SendingHistoryPanel key={sendingHistoryKey} invoiceId={invoice._id} />
+        </div>
+      )}
     </div>
   );
 }
