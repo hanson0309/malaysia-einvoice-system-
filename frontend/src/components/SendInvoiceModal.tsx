@@ -52,6 +52,22 @@ export default function SendInvoiceModal({
   // Handle send function
   const handleSend = async () => {
     setError(null);
+
+    // Validate customer has required contact info
+    if (sendMethod === 'email' || sendMethod === 'both') {
+      if (!customer.email) {
+        setError('Customer email is required for email delivery');
+        return;
+      }
+    }
+
+    if (sendMethod === 'whatsapp' || sendMethod === 'both') {
+      if (!customer.phone) {
+        setError('Customer phone number is required for WhatsApp delivery');
+        return;
+      }
+    }
+
     setIsSending(true);
 
     try {
@@ -81,8 +97,10 @@ export default function SendInvoiceModal({
         onSuccess();
         onClose();
       }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || 'Failed to send invoice';
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to send invoice'
+        : 'Failed to send invoice';
       setError(errorMessage);
     } finally {
       setIsSending(false);
@@ -213,7 +231,7 @@ export default function SendInvoiceModal({
                     return (
                       <motion.button
                         key={method.value}
-                        onClick={() => setSendMethod(method.value as any)}
+                        onClick={() => setSendMethod(method.value as 'email' | 'whatsapp' | 'both')}
                         style={{
                           flex: 1,
                           padding: '1rem',
@@ -347,7 +365,12 @@ export default function SendInvoiceModal({
               >
                 {isSending ? (
                   <>
-                    <Loader style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} />
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Loader style={{ width: '20px', height: '20px' }} />
+                    </motion.div>
                     Sending...
                   </>
                 ) : (
