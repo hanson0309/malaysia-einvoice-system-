@@ -26,6 +26,10 @@ export class EmailService {
   private transporter;
 
   constructor() {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      throw new Error('SMTP credentials not configured');
+    }
+
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -43,20 +47,25 @@ export class EmailService {
     const subject = params.customSubject || this.getDefaultSubject(params);
     const html = params.customMessage || this.getDefaultHtml(params);
 
-    await this.transporter.sendMail({
-      from: `${process.env.SMTP_FROM_NAME || 'MyInvois System'} <${process.env.SMTP_USER}>`,
-      to: params.to,
-      subject,
-      html,
-      attachments: [
-        {
-          filename: `Invoice-${params.invoice.invoice_number}.pdf`,
-          content: params.pdfBuffer,
-        },
-      ],
-    });
+    try {
+      await this.transporter.sendMail({
+        from: `${process.env.SMTP_FROM_NAME || 'MyInvois System'} <${process.env.SMTP_USER}>`,
+        to: params.to,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: `Invoice-${params.invoice.invoice_number}.pdf`,
+            content: params.pdfBuffer,
+          },
+        ],
+      });
 
-    return { success: true };
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to send invoice email: ${errorMessage}`);
+    }
   }
 
   private isValidEmail(email: string): boolean {
