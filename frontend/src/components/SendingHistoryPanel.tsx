@@ -110,7 +110,7 @@ export default function SendingHistoryPanel({ invoiceId }: SendingHistoryPanelPr
                   {new Date(record.created_at).toLocaleString('en-MY')}
                 </p>
                 <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                  by {record.sent_by.name}
+                  by {record.sent_by.email}
                 </p>
               </div>
 
