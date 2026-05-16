@@ -476,4 +476,32 @@ router.post('/:id/send', async (req: AuthRequest, res, next) => {
   }
 });
 
+router.get('/:id/sending-history', async (req: AuthRequest, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    });
+
+    if (!invoice) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    const history = await InvoiceSending.find({
+      tenant_id: req.tenantId,
+      invoice_id: req.params.id,
+    })
+      .populate('sent_by', 'email')
+      .sort({ created_at: -1 });
+
+    res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
