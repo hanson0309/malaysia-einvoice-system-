@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Mail, MessageCircle, Send, Loader } from 'lucide-react';
 import { invoiceApi, type SendInvoiceData } from '../lib/api';
+import WhatsAppLinkButton from './WhatsAppLinkButton';
 
 interface SendInvoiceModalProps {
   isOpen: boolean;
@@ -156,7 +157,207 @@ export default function SendInvoiceModal({
               </button>
             </div>
 
-            {/* Body - continues in next chunk */}
+            {/* Body */}
+            <div style={{ padding: '2rem' }}>
+              {/* Error Display */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    marginBottom: '1.5rem',
+                  }}
+                >
+                  <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{error}</p>
+                </motion.div>
+              )}
+
+              {/* WhatsApp Link Success */}
+              {whatsappLink && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    padding: '1.5rem',
+                    borderRadius: '0.75rem',
+                    background: 'rgba(37, 211, 102, 0.1)',
+                    border: '1px solid rgba(37, 211, 102, 0.3)',
+                    marginBottom: '1.5rem',
+                    textAlign: 'center',
+                  }}
+                >
+                  <p style={{ color: '#10b981', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                    WhatsApp link generated successfully!
+                  </p>
+                  <WhatsAppLinkButton link={whatsappLink} label="Open WhatsApp" />
+                </motion.div>
+              )}
+
+              {/* Send Method Selection */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.75rem' }}>
+                  Send Method *
+                </label>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  {[
+                    { value: 'email', icon: Mail, label: 'Email', color: '#8b5cf6' },
+                    { value: 'whatsapp', icon: MessageCircle, label: 'WhatsApp', color: '#25D366' },
+                    { value: 'both', icon: Send, label: 'Both', color: '#f59e0b' },
+                  ].map((method) => {
+                    const Icon = method.icon;
+                    const isSelected = sendMethod === method.value;
+                    return (
+                      <motion.button
+                        key={method.value}
+                        onClick={() => setSendMethod(method.value as any)}
+                        style={{
+                          flex: 1,
+                          padding: '1rem',
+                          borderRadius: '0.75rem',
+                          background: isSelected ? `${method.color}20` : 'rgba(30, 41, 59, 0.5)',
+                          border: `2px solid ${isSelected ? method.color : 'rgba(139, 92, 246, 0.2)'}`,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Icon style={{ width: '24px', height: '24px', color: isSelected ? method.color : '#94a3b8' }} />
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isSelected ? method.color : '#94a3b8' }}>
+                          {method.label}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Email Fields */}
+              {(sendMethod === 'email' || sendMethod === 'both') && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ marginBottom: '1.5rem' }}
+                >
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                      Email Subject (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      placeholder={`Invoice #${invoice.invoice_number} from your company`}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        background: 'rgba(30, 41, 59, 0.9)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        color: '#f1f5f9',
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                      Email Message (Optional)
+                    </label>
+                    <textarea
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      placeholder="Custom message for the email body..."
+                      rows={4}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        background: 'rgba(30, 41, 59, 0.9)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        color: '#f1f5f9',
+                        fontSize: '0.875rem',
+                        resize: 'vertical',
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* WhatsApp Message Field */}
+              {(sendMethod === 'whatsapp' || sendMethod === 'both') && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ marginBottom: '1.5rem' }}
+                >
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                    WhatsApp Message (Optional)
+                  </label>
+                  <textarea
+                    value={whatsappMessage}
+                    onChange={(e) => setWhatsappMessage(e.target.value)}
+                    placeholder="Custom message for WhatsApp..."
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '0.5rem',
+                      background: 'rgba(30, 41, 59, 0.9)',
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                      color: '#f1f5f9',
+                      fontSize: '0.875rem',
+                      resize: 'vertical',
+                    }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Send Button */}
+              <motion.button
+                onClick={handleSend}
+                disabled={isSending}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  borderRadius: '0.75rem',
+                  background: isSending
+                    ? 'rgba(139, 92, 246, 0.5)'
+                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  cursor: isSending ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                }}
+                whileHover={!isSending ? { scale: 1.02 } : }
+                whileTap={!isSending ? { scale: 0.98 } : {}}
+              >
+                {isSending ? (
+                  <>
+                    <Loader style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send style={{ width: '20px', height: '20px' }} />
+                    Send Invoice
+                  </>
+                )}
+              </motion.button>
+            </div>
           </motion.div>
         </motion.div>
       )}
