@@ -21,6 +21,7 @@ export default function SendInvoiceModal({
   isOpen,
   onClose,
   invoice,
+  customer,
   onSuccess,
 }: SendInvoiceModalProps) {
   // State management
@@ -41,17 +42,10 @@ export default function SendInvoiceModal({
     try {
       const data: SendInvoiceData = {
         send_method: sendMethod,
+        email_subject: emailSubject || undefined,
+        email_message: emailMessage || undefined,
+        whatsapp_message: whatsappMessage || undefined,
       };
-
-      // Add optional fields based on send method
-      if (sendMethod === 'email' || sendMethod === 'both') {
-        if (emailSubject) data.email_subject = emailSubject;
-        if (emailMessage) data.email_message = emailMessage;
-      }
-
-      if (sendMethod === 'whatsapp' || sendMethod === 'both') {
-        if (whatsappMessage) data.whatsapp_message = whatsappMessage;
-      }
 
       const response = await invoiceApi.send(invoice._id, data);
 
@@ -60,9 +54,9 @@ export default function SendInvoiceModal({
         setWhatsappLink(response.data.data.whatsapp_link);
       }
 
-      // If email was sent successfully, show alert and close
-      if (response.data.data.email_sent) {
-        alert('Invoice sent successfully via email!');
+      // If email or both methods were used and email was sent, show alert and close
+      if ((sendMethod === 'email' || sendMethod === 'both') && response.data.data.email_sent) {
+        alert('Invoice sent successfully!');
         onSuccess();
         onClose();
       }
