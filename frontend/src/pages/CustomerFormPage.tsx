@@ -17,6 +17,25 @@ interface CustomerFormData {
   country_code: string;
 }
 
+// Reusable input styles
+const inputStyle = {
+  width: '100%',
+  padding: '0.75rem',
+  borderRadius: '0.5rem',
+  background: 'rgba(30, 41, 59, 0.9)',
+  border: '1px solid rgba(139, 92, 246, 0.3)',
+  color: '#f1f5f9',
+  fontSize: '0.875rem',
+  outline: 'none',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
+};
+
+const inputFocusStyle = {
+  ...inputStyle,
+  border: '1px solid rgba(139, 92, 246, 0.6)',
+  boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
+};
+
 export default function CustomerFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -37,6 +56,7 @@ export default function CustomerFormPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -71,6 +91,33 @@ export default function CustomerFormPage() {
     if (!formData.name.trim()) {
       setError('Customer name is required');
       return;
+    }
+
+    // Email validation
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Please enter a valid email address (e.g., customer@example.com)');
+        return;
+      }
+    }
+
+    // Phone validation (Malaysian format)
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^(\+60|0)[0-9]{8,10}$/;
+      if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
+        setError('Please enter a valid Malaysian phone number (e.g., +60123456789 or 0123456789)');
+        return;
+      }
+    }
+
+    // TIN validation (basic format check)
+    if (formData.tin && formData.tin.trim()) {
+      const tinRegex = /^[A-Z0-9]{10,20}$/;
+      if (!tinRegex.test(formData.tin)) {
+        setError('Please enter a valid TIN (10-20 alphanumeric characters)');
+        return;
+      }
     }
 
     try {
@@ -146,16 +193,11 @@ export default function CustomerFormPage() {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
+                    onFocus={() => setFocusedField('name')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="ABC Corporation Sdn Bhd"
                     required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    style={focusedField === 'name' ? inputFocusStyle : inputStyle}
                   />
                 </div>
               </div>
@@ -176,15 +218,10 @@ export default function CustomerFormPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="customer@example.com"
+                    style={focusedField === 'email' ? inputFocusStyle : inputStyle}
                   />
                 </div>
                 <div>
@@ -196,15 +233,10 @@ export default function CustomerFormPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    onFocus={() => setFocusedField('phone')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="+60123456789"
+                    style={focusedField === 'phone' ? inputFocusStyle : inputStyle}
                   />
                 </div>
                 <div>
@@ -216,15 +248,10 @@ export default function CustomerFormPage() {
                     name="tin"
                     value={formData.tin}
                     onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    onFocus={() => setFocusedField('tin')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="C1234567890"
+                    style={focusedField === 'tin' ? inputFocusStyle : inputStyle}
                   />
                 </div>
               </div>
@@ -245,15 +272,10 @@ export default function CustomerFormPage() {
                     name="address_line1"
                     value={formData.address_line1}
                     onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    onFocus={() => setFocusedField('address_line1')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="123 Jalan Sultan"
+                    style={focusedField === 'address_line1' ? inputFocusStyle : inputStyle}
                   />
                 </div>
                 <div>
@@ -265,15 +287,10 @@ export default function CustomerFormPage() {
                     name="address_line2"
                     value={formData.address_line2}
                     onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      borderRadius: '0.5rem',
-                      background: 'rgba(30, 41, 59, 0.9)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: '#f1f5f9',
-                      fontSize: '0.875rem',
-                    }}
+                    onFocus={() => setFocusedField('address_line2')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="Taman Melawati (optional)"
+                    style={focusedField === 'address_line2' ? inputFocusStyle : inputStyle}
                   />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
@@ -286,15 +303,10 @@ export default function CustomerFormPage() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(30, 41, 59, 0.9)',
-                        border: '1px solid rgba(139, 92, 246, 0.3)',
-                        color: '#f1f5f9',
-                        fontSize: '0.875rem',
-                      }}
+                      onFocus={() => setFocusedField('city')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="Kuala Lumpur"
+                      style={focusedField === 'city' ? inputFocusStyle : inputStyle}
                     />
                   </div>
                   <div>
@@ -306,15 +318,10 @@ export default function CustomerFormPage() {
                       name="postcode"
                       value={formData.postcode}
                       onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(30, 41, 59, 0.9)',
-                        border: '1px solid rgba(139, 92, 246, 0.3)',
-                        color: '#f1f5f9',
-                        fontSize: '0.875rem',
-                      }}
+                      onFocus={() => setFocusedField('postcode')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="50000"
+                      style={focusedField === 'postcode' ? inputFocusStyle : inputStyle}
                     />
                   </div>
                 </div>
@@ -328,16 +335,10 @@ export default function CustomerFormPage() {
                       name="state_code"
                       value={formData.state_code}
                       onChange={handleChange}
+                      onFocus={() => setFocusedField('state_code')}
+                      onBlur={() => setFocusedField(null)}
                       placeholder="e.g., 14 for Kuala Lumpur"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(30, 41, 59, 0.9)',
-                        border: '1px solid rgba(139, 92, 246, 0.3)',
-                        color: '#f1f5f9',
-                        fontSize: '0.875rem',
-                      }}
+                      style={focusedField === 'state_code' ? inputFocusStyle : inputStyle}
                     />
                   </div>
                   <div>
@@ -349,15 +350,10 @@ export default function CustomerFormPage() {
                       name="country_code"
                       value={formData.country_code}
                       onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(30, 41, 59, 0.9)',
-                        border: '1px solid rgba(139, 92, 246, 0.3)',
-                        color: '#f1f5f9',
-                        fontSize: '0.875rem',
-                      }}
+                      onFocus={() => setFocusedField('country_code')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="MY"
+                      style={focusedField === 'country_code' ? inputFocusStyle : inputStyle}
                     />
                   </div>
                 </div>
