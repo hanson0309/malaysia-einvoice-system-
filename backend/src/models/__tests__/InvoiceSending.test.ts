@@ -24,7 +24,9 @@ describe('InvoiceSending Model', () => {
     expect(schema.path('email_sent').defaultValue).toBe(false);
     expect(schema.path('email_status').defaultValue).toBe('pending');
     expect(schema.path('whatsapp_link_generated').defaultValue).toBe(false);
-    expect(schema.path('whatsapp_phone').defaultValue).toBe('');
+
+    // Check whatsapp_phone is required
+    expect(schema.path('whatsapp_phone').isRequired).toBe(true);
   });
 
   it('should have correct indexes', () => {

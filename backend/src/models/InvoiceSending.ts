@@ -32,7 +32,7 @@ const InvoiceSendingSchema = new Schema<IInvoiceSending>(
     email_to: { type: String, required: true },
     whatsapp_link_generated: { type: Boolean, required: true, default: false },
     whatsapp_link: { type: String },
-    whatsapp_phone: { type: String, default: '' },
+    whatsapp_phone: { type: String, required: true },
     sent_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     pdf_url: { type: String },
   },
