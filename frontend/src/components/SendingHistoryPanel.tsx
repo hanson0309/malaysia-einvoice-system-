@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { invoiceApi, type SendingHistoryItem } from '../lib/api';
@@ -11,26 +11,47 @@ interface SendingHistoryPanelProps {
 export default function SendingHistoryPanel({ invoiceId }: SendingHistoryPanelProps) {
   const [history, setHistory] = useState<SendingHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadHistory();
-  }, [invoiceId]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
+      setError(null);
       const response = await invoiceApi.getSendingHistory(invoiceId);
       setHistory(response.data.data);
     } catch (error) {
       console.error('Failed to load sending history:', error);
+      setError('Failed to load sending history');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [invoiceId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   if (isLoading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
         Loading history...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: '2rem',
+          textAlign: 'center',
+          color: '#ef4444',
+          background: 'rgba(239, 68, 68, 0.1)',
+          borderRadius: '1rem',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+        }}
+      >
+        <AlertCircle style={{ width: '48px', height: '48px', margin: '0 auto 1rem' }} />
+        <p>{error}</p>
       </div>
     );
   }
@@ -83,7 +104,7 @@ export default function SendingHistoryPanel({ invoiceId }: SendingHistoryPanelPr
             key={record._id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: Math.min(index * 0.1, 0.5) }}
             style={{
               padding: '1.5rem',
               borderRadius: '1rem',

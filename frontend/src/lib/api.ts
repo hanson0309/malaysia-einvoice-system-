@@ -93,7 +93,6 @@ export interface SendingHistoryItem {
   whatsapp_link?: string;
   whatsapp_phone: string;
   sent_by: {
-    name: string;
     email: string;
   };
   created_at: string;
