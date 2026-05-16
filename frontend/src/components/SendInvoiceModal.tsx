@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { invoiceApi, type SendInvoiceData } from '../lib/api';
 
 interface SendInvoiceModalProps {
@@ -91,5 +93,75 @@ export default function SendInvoiceModal({
     return null;
   }
 
-  return null; // Placeholder - JSX will be added in Part 2
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem',
+        }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          style={{
+            background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+            borderRadius: '1.5rem',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '2rem',
+              borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
+                Send Invoice
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                {invoice.invoice_number} • {customer.name}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.5rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                cursor: 'pointer',
+              }}
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+          </div>
+
+          {/* Body - continues in next chunk */}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
 }
