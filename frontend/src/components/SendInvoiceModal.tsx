@@ -342,7 +342,7 @@ export default function SendInvoiceModal({
                   justifyContent: 'center',
                   gap: '0.5rem',
                 }}
-                whileHover={!isSending ? { scale: 1.02 } : }
+                whileHover={!isSending ? { scale: 1.02 } : {}}
                 whileTap={!isSending ? { scale: 0.98 } : {}}
               >
                 {isSending ? (
