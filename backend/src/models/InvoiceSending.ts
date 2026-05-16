@@ -12,6 +12,7 @@ export interface IInvoiceSending extends Document {
   email_to: string;
   whatsapp_link_generated: boolean;
   whatsapp_link?: string;
+  whatsapp_error_message?: string;
   whatsapp_phone: string;
   sent_by: mongoose.Types.ObjectId;
   pdf_url?: string;
@@ -32,6 +33,7 @@ const InvoiceSendingSchema = new Schema<IInvoiceSending>(
     email_to: { type: String, required: true },
     whatsapp_link_generated: { type: Boolean, required: true, default: false },
     whatsapp_link: { type: String },
+    whatsapp_error_message: { type: String },
     whatsapp_phone: { type: String, required: true },
     sent_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     pdf_url: { type: String },

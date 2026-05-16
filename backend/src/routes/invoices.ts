@@ -332,6 +332,19 @@ router.post('/:id/send', async (req: AuthRequest, res, next) => {
       throw new NotFoundError('Tenant not found');
     }
 
+    // Validate customer has required contact info before creating record
+    if (send_method === 'email' || send_method === 'both') {
+      if (!customer.email) {
+        throw new ValidationError('Customer email is missing');
+      }
+    }
+
+    if (send_method === 'whatsapp' || send_method === 'both') {
+      if (!customer.phone) {
+        throw new ValidationError('Customer phone number is missing');
+      }
+    }
+
     const sendingRecord = await InvoiceSending.create({
       tenant_id: req.tenantId,
       invoice_id: invoice._id,
@@ -349,9 +362,6 @@ router.post('/:id/send', async (req: AuthRequest, res, next) => {
     let whatsappLink: string | undefined;
 
     if (send_method === 'email' || send_method === 'both') {
-      if (!customer.email) {
-        throw new ValidationError('Customer email is missing');
-      }
 
       try {
         const pdfBuffer = await PDFService.generateInvoicePDFBuffer({
@@ -419,10 +429,6 @@ router.post('/:id/send', async (req: AuthRequest, res, next) => {
     }
 
     if (send_method === 'whatsapp' || send_method === 'both') {
-      if (!customer.phone) {
-        throw new ValidationError('Customer phone number is missing');
-      }
-
       try {
         whatsappLink = WhatsAppService.generateInvoiceLink({
           phone: customer.phone,
@@ -448,7 +454,12 @@ router.post('/:id/send', async (req: AuthRequest, res, next) => {
           }
         );
       } catch (error: any) {
-        throw new ValidationError(`WhatsApp link generation failed: ${error.message}`);
+        await InvoiceSending.updateOne(
+          { _id: sendingRecord._id },
+          {
+            whatsapp_error_message: error.message,
+          }
+        );
       }
     }
 
