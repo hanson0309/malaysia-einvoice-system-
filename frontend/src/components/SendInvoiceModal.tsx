@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { invoiceApi, type SendInvoiceData } from '../lib/api';
 
 interface SendInvoiceModalProps {
@@ -11,7 +11,7 @@ interface SendInvoiceModalProps {
   };
   customer: {
     name: string;
-    email: string;
+    email?: string;
     phone?: string;
   };
   onSuccess: () => void;
@@ -25,17 +25,29 @@ export default function SendInvoiceModal({
   onSuccess,
 }: SendInvoiceModalProps) {
   // State management
-  const [sendMethod, _setSendMethod] = useState<'email' | 'whatsapp' | 'both'>('email');
-  const [_isSending, setIsSending] = useState(false);
-  const [_error, setError] = useState<string | null>(null);
-  const [_whatsappLink, setWhatsappLink] = useState<string | null>(null);
-  const [emailSubject, _setEmailSubject] = useState('');
-  const [emailMessage, _setEmailMessage] = useState('');
-  const [whatsappMessage, _setWhatsappMessage] = useState('');
+  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp' | 'both'>('email');
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [whatsappLink, setWhatsappLink] = useState<string | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [whatsappMessage, setWhatsappMessage] = useState('');
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSendMethod('email');
+      setIsSending(false);
+      setError(null);
+      setWhatsappLink(null);
+      setEmailSubject('');
+      setEmailMessage('');
+      setWhatsappMessage('');
+    }
+  }, [isOpen]);
 
   // Handle send function
-  // @ts-expect-error - Function will be used in Part 2
-  const _handleSend = async () => {
+  const handleSend = async () => {
     setError(null);
     setIsSending(true);
 
@@ -57,6 +69,12 @@ export default function SendInvoiceModal({
       // If email or both methods were used and email was sent, show alert and close
       if ((sendMethod === 'email' || sendMethod === 'both') && response.data.data.email_sent) {
         alert('Invoice sent successfully!');
+        onSuccess();
+        onClose();
+      }
+
+      // If WhatsApp-only method was used and link was generated, close modal
+      if (sendMethod === 'whatsapp' && response.data.data.whatsapp_link) {
         onSuccess();
         onClose();
       }
