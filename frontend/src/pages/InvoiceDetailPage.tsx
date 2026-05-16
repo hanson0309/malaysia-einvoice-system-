@@ -120,6 +120,7 @@ export default function InvoiceDetailPage() {
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-[#2d3748]/95 z-50 flex items-center justify-center p-6">
       {/* Close button - top left */}
       <button
@@ -165,26 +166,13 @@ export default function InvoiceDetailPage() {
               </button>
             )}
 
-            <motion.button
+            <button
               onClick={() => setIsSendModalOpen(true)}
-              style={{
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.75rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: 'none',
-                color: 'white',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
             >
-              <Send style={{ width: '18px', height: '18px' }} />
+              <Send className="w-3 h-3" />
               Send to Customer
-            </motion.button>
+            </button>
           </div>
         </div>
 
@@ -372,12 +360,14 @@ export default function InvoiceDetailPage() {
         />
       )}
 
+    </div>
+
       {/* Sending History */}
       {invoice && (
         <div style={{ marginTop: '2rem' }}>
           <SendingHistoryPanel key={sendingHistoryKey} invoiceId={invoice._id} />
         </div>
       )}
-    </div>
+    </>
   );
 }
