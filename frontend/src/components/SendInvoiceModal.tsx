@@ -102,9 +102,19 @@ export default function SendInvoiceModal({
         onClose();
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to send invoice'
-        : 'Failed to send invoice';
+      const errorResponse = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string; retryAfter?: number }; status?: number } }).response
+        : undefined;
+
+      // Handle rate limiting
+      if (errorResponse?.status === 429) {
+        const retryAfter = errorResponse.data?.retryAfter || 60;
+        toast.error(`Too many requests. Please try again in ${retryAfter} seconds.`);
+        return;
+      }
+
+      // Handle other errors
+      const errorMessage = errorResponse?.data?.error || 'Failed to send invoice';
       setError(errorMessage);
     } finally {
       setIsSending(false);
