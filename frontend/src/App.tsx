@@ -6,8 +6,6 @@ import DashboardLayout from './components/DashboardLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
-import ProfilePage from './pages/ProfilePage';
 import CustomersPage from './pages/CustomersPage';
 import CustomerFormPage from './pages/CustomerFormPage';
 import ProductsPage from './pages/ProductsPage';
@@ -33,8 +31,6 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path="analytics" element={<AnalyticsDashboardPage />} />
-            <Route path="profile" element={<ProfilePage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/new" element={<ProductFormPage />} />
             <Route path="products/:id/edit" element={<ProductFormPage />} />

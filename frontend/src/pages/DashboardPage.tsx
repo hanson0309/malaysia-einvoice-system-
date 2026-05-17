@@ -10,7 +10,6 @@ import {
   XCircle,
   AlertCircle,
   Sparkles,
-  DollarSign,
   Calendar,
   BarChart3,
 } from 'lucide-react';

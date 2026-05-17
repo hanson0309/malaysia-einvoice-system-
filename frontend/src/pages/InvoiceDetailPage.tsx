@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, irbApi } from '../lib/api';
 import SendInvoiceModal from '../components/SendInvoiceModal';
-import SendingHistoryPanel from '../components/SendingHistoryPanel';
 
 interface InvoiceData {
   _id: string;
@@ -32,7 +31,6 @@ export default function InvoiceDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [sendingHistoryKey, setSendingHistoryKey] = useState(0);
 
   useEffect(() => {
     loadInvoice();
@@ -81,7 +79,7 @@ export default function InvoiceDetailPage() {
       if (newStatus !== currentStatus) {
         toast.success(`状态已更新为：${newStatus}`);
       } else {
-        toast.info(`状态无变化，仍为：${currentStatus}`);
+        toast.success(`状态无变化，仍为：${currentStatus}`);
       }
 
       await loadInvoice();
@@ -355,7 +353,6 @@ export default function InvoiceDetailPage() {
             phone: invoice.customer.phone,
           }}
           onSuccess={() => {
-            setSendingHistoryKey((prev) => prev + 1);
             setIsSendModalOpen(false);
           }}
           invoiceId={invoice._id}
@@ -363,5 +360,6 @@ export default function InvoiceDetailPage() {
       )}
 
     </div>
+    </>
   );
 }

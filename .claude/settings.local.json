@@ -69,7 +69,26 @@
       "Bash(find public *)",
       "Bash(find src *)",
       "Bash(pkill -f \"vite\")",
-      "Bash(pkill -f \"node.*vite\")"
+      "Bash(pkill -f \"node.*vite\")",
+      "WebFetch(domain:sdk.myinvois.hasil.gov.my)",
+      "WebSearch",
+      "WebFetch(domain:get.works25.com)",
+      "WebFetch(domain:preprod.myinvois.hasil.gov.my)",
+      "WebFetch(domain:qnemy.freshdesk.com)",
+      "WebFetch(domain:docs.complyance.io)",
+      "PowerShell(curl http://localhost:3000/api/v1/irb/status/test123 -Headers @{\"Authorization\"=\"Bearer test\"} 2>&1 | Select-Object -First 20)",
+      "PowerShell($token = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNmEwMzJkNDgzYzY1OGQ4ZDcxMDE0YmRkIiwidGVuYW50X2lkIjoiNmEwMzJkNDgzYzY1OGQ4ZDcxMDE0YmRjIiwiZW1haWwiOiJoYW5zb25uZzAwQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3ODU5NjcyNywiZXhwIjoxNzc4NjAwMzI3fQ.CGEb_m9f-eirRxoiQh-PRR5p6NncQDv2_MjVcQHp8lA\"; $headers = @{\"Authorization\"=\"Bearer $token\"; \"Content-Type\"=\"application/json\"}; try { $response = Invoke-WebRequest -Uri \"http://localhost:3000/api/v1/irb/submit/6a032dd03c658d8d71014bdf\" -Method POST -Headers $headers -UseBasicParsing; $response.Content } catch { $_.Exception.Response.StatusCode; $reader = New-Object System.IO.StreamReader\\($_.Exception.Response.GetResponseStream\\(\\)\\); $reader.ReadToEnd\\(\\) })",
+      "PowerShell(Get-Process *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python3 *)",
+      "PowerShell(Out-Null *)",
+      "WebFetch(domain:www.mcmc.gov.my)",
+      "WebFetch(domain:quickbooks.intuit.com)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs -I {} taskkill //F //PID {})"
     ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
   }
 }
