@@ -358,17 +358,10 @@ export default function InvoiceDetailPage() {
             setSendingHistoryKey((prev) => prev + 1);
             setIsSendModalOpen(false);
           }}
+          invoiceId={invoice._id}
         />
       )}
 
     </div>
-
-      {/* Sending History */}
-      {invoice && (
-        <div style={{ marginTop: '2rem' }}>
-          <SendingHistoryPanel key={sendingHistoryKey} invoiceId={invoice._id} />
-        </div>
-      )}
-    </>
   );
 }

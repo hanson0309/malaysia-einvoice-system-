@@ -4,6 +4,7 @@ import { X, Mail, MessageCircle, Send, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { invoiceApi, type SendInvoiceData } from '../lib/api';
 import WhatsAppLinkButton from './WhatsAppLinkButton';
+import SendingHistoryPanel from './SendingHistoryPanel';
 
 interface SendInvoiceModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface SendInvoiceModalProps {
     phone?: string;
   };
   onSuccess: () => void;
+  invoiceId: string;
 }
 
 export default function SendInvoiceModal({
@@ -27,6 +29,7 @@ export default function SendInvoiceModal({
   invoice,
   customer,
   onSuccess,
+  invoiceId,
 }: SendInvoiceModalProps) {
   // State management
   const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp' | 'both'>('email');
@@ -381,6 +384,11 @@ export default function SendInvoiceModal({
                   </>
                 )}
               </motion.button>
+
+              {/* Sending History */}
+              <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                <SendingHistoryPanel invoiceId={invoiceId} />
+              </div>
             </div>
           </motion.div>
         </motion.div>
