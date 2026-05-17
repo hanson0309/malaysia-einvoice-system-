@@ -17,7 +17,7 @@ const customerSchema = z.object({
   phone: z.string().max(20).optional(),
   registration_no: z.string().min(1).max(50),
   id_type: z.enum(['NRIC', 'PASSPORT', 'BRN', 'ARMY']),
-  tin_number: z.string().length(12).optional(),
+  tin_number: z.string().min(11).max(13).optional(),
   address_line1: z.string().max(200).optional(),
   address_line2: z.string().max(200).optional(),
   city: z.string().max(100).optional(),
