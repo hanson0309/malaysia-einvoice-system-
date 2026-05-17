@@ -33,7 +33,7 @@ export default function InvoiceFormPage() {
     payment_terms: '',
   });
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'EXEMPT', tax_rate: 0, amount: 0 },
+    { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -103,7 +103,7 @@ export default function InvoiceFormPage() {
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
-      { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'EXEMPT', tax_rate: 0, amount: 0 },
+      { product: '', description: '', quantity: 1, unit_price: 0, tax_type: 'SST', tax_rate: 6, amount: 0 },
     ]);
   };
 
@@ -580,23 +580,24 @@ export default function InvoiceFormPage() {
                         onChange={(e) => handleLineItemChange(index, 'tax_type', e.target.value)}
                         style={inputStyle}
                       >
-                        <option value="EXEMPT">Exempt (个人收入/工资/教育/医疗)</option>
-                        <option value="E">Exempt - E (豁免)</option>
-                        <option value="Z">Zero Rated (零税率 - 出口/基本必需品)</option>
-                        <option value="SST">SST (销售与服务税 6%/10%)</option>
-                        <option value="SR">Standard Rated (标准税率)</option>
-                        <option value="OE">Out of Scope (不在征税范围)</option>
+                        <option value="SST">SST - Sales & Service Tax (6%/10%)</option>
+                        <option value="E">E - Exempt</option>
+                        <option value="Z">Z - Zero Rated</option>
+                        <option value="SR">SR - Standard Rated</option>
+                        <option value="OE">OE - Out of Scope</option>
+                        <option value="EXEMPT">EXEMPT - Personal Income (B2C only)</option>
                       </select>
                       <div style={{
                         marginTop: '0.25rem',
                         fontSize: '0.7rem',
                         color: '#94a3b8'
                       }}>
-                        {item.tax_type === 'EXEMPT' && '✓ 适用于个人报税项目（工资、教育费、医疗费等）'}
-                        {item.tax_type === 'E' && '✓ 豁免类别'}
-                        {item.tax_type === 'Z' && '✓ 零税率（0%）'}
-                        {item.tax_type === 'SST' && '✓ 商品销售或应税服务'}
-                        {item.tax_type === 'SR' && '✓ 标准税率'}
+                        {item.tax_type === 'SST' && '✓ B2B - Goods sales or taxable services (6% or 10%)'}
+                        {item.tax_type === 'E' && '✓ B2B/B2C - Exempt category'}
+                        {item.tax_type === 'Z' && '✓ B2B/B2C - Zero rated (0%) - Exports/Essential goods'}
+                        {item.tax_type === 'SR' && '✓ B2B - Standard rated'}
+                        {item.tax_type === 'EXEMPT' && '✓ B2C - Personal income/salary/education/medical'}
+                        {item.tax_type === 'OE' && '✓ Out of scope'}
                         {item.tax_type === 'OE' && '✓ 不在征税范围'}
                       </div>
                     </div>
