@@ -30,7 +30,7 @@ export default function CustomersPage() {
       setIsLoading(true);
       setError(null);
       const response = await customerApi.getAll();
-      setCustomers(response.data);
+      setCustomers(response.data.data || []);
     } catch (err) {
       setError('Failed to load customers');
       console.error(err);
