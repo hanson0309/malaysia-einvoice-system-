@@ -39,6 +39,16 @@ const inputFocusStyle = {
   boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
 };
 
+const getRegistrationPlaceholder = (idType: string) => {
+  switch (idType) {
+    case 'NRIC': return 'e.g., 901234-56-7890';
+    case 'PASSPORT': return 'e.g., A12345678';
+    case 'BRN': return 'e.g., 202301234567';
+    case 'ARMY': return 'e.g., T1234567';
+    default: return '';
+  }
+};
+
 export default function CustomerFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -248,6 +258,51 @@ export default function CustomerFormPage() {
                     placeholder="ABC Corporation Sdn Bhd"
                     required
                     style={focusedField === 'name' ? inputFocusStyle : inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Identity Information */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
+                Identity Information
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                    ID Type *
+                  </label>
+                  <select
+                    name="id_type"
+                    value={formData.id_type}
+                    onChange={(e) => setFormData({ ...formData, id_type: e.target.value as 'NRIC' | 'PASSPORT' | 'BRN' | 'ARMY' })}
+                    onFocus={() => setFocusedField('id_type')}
+                    onBlur={() => setFocusedField(null)}
+                    required
+                    style={focusedField === 'id_type' ? inputFocusStyle : inputStyle}
+                  >
+                    <option value="NRIC">NRIC (Malaysian IC)</option>
+                    <option value="PASSPORT">Passport</option>
+                    <option value="BRN">BRN (Business Registration)</option>
+                    <option value="ARMY">Army ID</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                    Registration Number *
+                  </label>
+                  <input
+                    type="text"
+                    name="registration_no"
+                    value={formData.registration_no}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('registration_no')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder={getRegistrationPlaceholder(formData.id_type)}
+                    required
+                    maxLength={50}
+                    style={focusedField === 'registration_no' ? inputFocusStyle : inputStyle}
                   />
                 </div>
               </div>
