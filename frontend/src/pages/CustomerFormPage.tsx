@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, X } from 'lucide-react';
+import { Save, X, User, Building2 } from 'lucide-react';
 import { customerApi } from '../lib/api';
 
 interface CustomerFormData {
@@ -172,6 +172,50 @@ export default function CustomerFormPage() {
           marginBottom: '1.5rem',
         }}>
           <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{error}</p>
+        </div>
+      )}
+
+      {/* Customer Type Selection */}
+      {!isLoading && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.75rem' }}>
+            Customer Type *
+          </label>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {[
+              { value: 'B2C', icon: User, label: 'B2C (Individual)', color: '#8b5cf6' },
+              { value: 'B2B', icon: Building2, label: 'B2B (Business)', color: '#f59e0b' },
+            ].map((type) => {
+              const Icon = type.icon;
+              const isSelected = formData.customer_type === type.value;
+              return (
+                <motion.button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, customer_type: type.value as 'B2B' | 'B2C' })}
+                  style={{
+                    flex: 1,
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    background: isSelected ? `${type.color}20` : 'rgba(30, 41, 59, 0.5)',
+                    border: `2px solid ${isSelected ? type.color : 'rgba(139, 92, 246, 0.2)'}`,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Icon style={{ width: '24px', height: '24px', color: isSelected ? type.color : '#94a3b8' }} />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isSelected ? type.color : '#94a3b8' }}>
+                    {type.label}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
       )}
 
