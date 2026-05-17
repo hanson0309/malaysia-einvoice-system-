@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { AuthRequest } from './auth';
 
 export const sendInvoiceRateLimiter = rateLimit({
@@ -8,10 +8,10 @@ export const sendInvoiceRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 
-  // Rate limit by user ID from JWT token
+  // Rate limit by user ID from JWT token, fallback to IPv6-safe IP
   keyGenerator: (req) => {
     const authReq = req as AuthRequest;
-    return authReq.user?.user_id || req.ip || '';
+    return authReq.user?.user_id || ipKeyGenerator(req.ip || '');
   },
 
   // Custom error handler
