@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticateJWT, authenticateFlexible, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
+import { sendInvoiceRateLimiter } from '../middleware/rateLimiter';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
@@ -304,7 +305,7 @@ router.post('/:id/submit', async (req: AuthRequest, res, next) => {
   }
 });
 
-router.post('/:id/send', async (req: AuthRequest, res, next) => {
+router.post('/:id/send', sendInvoiceRateLimiter, async (req: AuthRequest, res, next) => {
   try {
     const { send_method, email_subject, email_message, whatsapp_message } = req.body;
 
