@@ -48,13 +48,16 @@ export default function CustomerFormPage() {
     name: '',
     email: '',
     phone: '',
-    tin: '',
+    registration_no: '',
+    id_type: 'NRIC',
+    tin_number: '',
     address_line1: '',
     address_line2: '',
     city: '',
     postcode: '',
     state_code: '',
     country_code: 'MY',
+    customer_type: 'B2C',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
