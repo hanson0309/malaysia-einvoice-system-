@@ -344,30 +344,31 @@ export default function CustomerFormPage() {
                     style={focusedField === 'phone' ? inputFocusStyle : inputStyle}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
-                    TIN (Tax ID)
-                  </label>
-                  <input
-                    type="text"
-                    name="tin"
-                    value={formData.tin}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('tin')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="C1234567890"
-                    style={focusedField === 'tin' ? inputFocusStyle : inputStyle}
-                  />
-                </div>
               </div>
             </div>
 
-            {/* Address Information */}
+            {/* Tax & Address Information */}
             <div>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
-                Address Information
+                Tax & Address Information
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                    TIN (Tax Identification Number) {formData.customer_type === 'B2B' && '*'}
+                  </label>
+                  <input
+                    type="text"
+                    name="tin_number"
+                    value={formData.tin_number}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('tin_number')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="C1234567890"
+                    required={formData.customer_type === 'B2B'}
+                    style={focusedField === 'tin_number' ? inputFocusStyle : inputStyle}
+                  />
+                </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
                     Address Line 1
