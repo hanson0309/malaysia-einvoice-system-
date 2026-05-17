@@ -8,13 +8,16 @@ interface CustomerFormData {
   name: string;
   email: string;
   phone: string;
-  tin: string;
+  registration_no: string;
+  id_type: 'NRIC' | 'PASSPORT' | 'BRN' | 'ARMY';
+  tin_number: string;
   address_line1: string;
   address_line2: string;
   city: string;
   postcode: string;
   state_code: string;
   country_code: string;
+  customer_type: 'B2B' | 'B2C';
 }
 
 // Reusable input styles
