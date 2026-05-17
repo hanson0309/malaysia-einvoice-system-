@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, MessageCircle, Send, Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { invoiceApi, type SendInvoiceData } from '../lib/api';
 import WhatsAppLinkButton from './WhatsAppLinkButton';
 
@@ -85,9 +86,9 @@ export default function SendInvoiceModal({
         setWhatsappLink(response.data.data.whatsapp_link);
       }
 
-      // If email or both methods were used and email was sent, show alert and close
+      // If email or both methods were used and email was sent, show toast and close
       if ((sendMethod === 'email' || sendMethod === 'both') && response.data.data.email_sent) {
-        alert('Invoice sent successfully!');
+        toast.success('Invoice sent successfully!');
         onSuccess();
         onClose();
       }
