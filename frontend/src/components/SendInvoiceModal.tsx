@@ -39,6 +39,7 @@ export default function SendInvoiceModal({
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [whatsappMessage, setWhatsappMessage] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -88,6 +89,9 @@ export default function SendInvoiceModal({
       if (response.data.data.whatsapp_link) {
         setWhatsappLink(response.data.data.whatsapp_link);
       }
+
+      // Refresh history panel after successful send
+      setHistoryRefreshKey(prev => prev + 1);
 
       // If email or both methods were used and email was sent, show toast and close
       if ((sendMethod === 'email' || sendMethod === 'both') && response.data.data.email_sent) {
@@ -397,7 +401,7 @@ export default function SendInvoiceModal({
 
               {/* Sending History */}
               <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                <SendingHistoryPanel invoiceId={invoiceId} />
+                <SendingHistoryPanel key={historyRefreshKey} invoiceId={invoiceId} />
               </div>
             </div>
           </motion.div>
