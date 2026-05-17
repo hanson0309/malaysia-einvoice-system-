@@ -104,12 +104,23 @@ export default function CustomerFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Name validation
     if (!formData.name.trim()) {
       setError('Customer name is required');
       return;
     }
 
-    // Email validation
+    // Registration number validation
+    if (!formData.registration_no.trim()) {
+      setError('Registration number is required');
+      return;
+    }
+    if (formData.registration_no.length > 50) {
+      setError('Registration number must not exceed 50 characters');
+      return;
+    }
+
+    // Email validation (optional, format check)
     if (formData.email && formData.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
@@ -118,7 +129,7 @@ export default function CustomerFormPage() {
       }
     }
 
-    // Phone validation (Malaysian format)
+    // Phone validation (optional, Malaysian format)
     if (formData.phone && formData.phone.trim()) {
       const phoneRegex = /^(\+60|0)[0-9]{8,10}$/;
       if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
@@ -127,12 +138,32 @@ export default function CustomerFormPage() {
       }
     }
 
-    // TIN validation (basic format check)
-    if (formData.tin && formData.tin.trim()) {
-      const tinRegex = /^[A-Z0-9]{10,20}$/;
-      if (!tinRegex.test(formData.tin)) {
-        setError('Please enter a valid TIN (10-20 alphanumeric characters)');
+    // B2B validation
+    if (formData.customer_type === 'B2B') {
+      // TIN required for B2B
+      if (!formData.tin_number.trim()) {
+        setError('TIN is required for B2B customers');
         return;
+      }
+      if (formData.tin_number.length < 11 || formData.tin_number.length > 13) {
+        setError('TIN must be between 11 and 13 characters');
+        return;
+      }
+      // Address required for B2B
+      if (!formData.address_line1.trim()) {
+        setError('Address Line 1 is required for B2B customers');
+        return;
+      }
+    }
+
+    // B2C validation
+    if (formData.customer_type === 'B2C') {
+      // TIN optional for B2C, but validate format if provided
+      if (formData.tin_number && formData.tin_number.trim()) {
+        if (formData.tin_number.length < 11 || formData.tin_number.length > 13) {
+          setError('TIN must be between 11 and 13 characters');
+          return;
+        }
       }
     }
 
