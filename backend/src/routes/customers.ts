@@ -13,16 +13,16 @@ router.use(extractTenant);
 
 const customerSchema = z.object({
   name: z.string().min(1).max(200),
-  email: z.string().email().max(100).optional(),
-  phone: z.string().max(20).optional(),
+  email: z.string().email().max(100).optional().or(z.literal('')),
+  phone: z.string().max(20).optional().or(z.literal('')),
   registration_no: z.string().min(1).max(50),
   id_type: z.enum(['NRIC', 'PASSPORT', 'BRN', 'ARMY']),
-  tin_number: z.string().min(11).max(13).optional(),
-  address_line1: z.string().max(200).optional(),
-  address_line2: z.string().max(200).optional(),
-  city: z.string().max(100).optional(),
-  postcode: z.string().max(10).optional(),
-  state_code: z.string().length(2).optional(),
+  tin_number: z.string().min(11).max(13).optional().or(z.literal('')),
+  address_line1: z.string().max(200).optional().or(z.literal('')),
+  address_line2: z.string().max(200).optional().or(z.literal('')),
+  city: z.string().max(100).optional().or(z.literal('')),
+  postcode: z.string().max(10).optional().or(z.literal('')),
+  state_code: z.string().length(2).optional().or(z.literal('')),
   country_code: z.string().length(2).default('MY'),
   customer_type: z.enum(['B2B', 'B2C']),
 });
@@ -30,15 +30,32 @@ const customerSchema = z.object({
 router.post('/', async (req: AuthRequest, res, next) => {
   try {
     console.log('Received customer data:', JSON.stringify(req.body, null, 2));
-    const data = customerSchema.parse(req.body);
+
+    // Convert empty strings to undefined for optional fields
+    const cleanedData = {
+      ...req.body,
+      email: req.body.email || undefined,
+      phone: req.body.phone || undefined,
+      tin_number: req.body.tin_number || undefined,
+      address_line1: req.body.address_line1 || undefined,
+      address_line2: req.body.address_line2 || undefined,
+      city: req.body.city || undefined,
+      postcode: req.body.postcode || undefined,
+      state_code: req.body.state_code || undefined,
+    };
+
+    const data = customerSchema.parse(cleanedData);
 
     // Validate B2B requirements
     if (data.customer_type === 'B2B') {
-      if (!data.tin_number) {
-        throw new ValidationError('TIN number is required for B2B customers');
+      if (!data.tin_number || data.tin_number.length < 11) {
+        throw new ValidationError('TIN number (11-13 characters) is required for B2B customers');
       }
       if (!data.address_line1) {
         throw new ValidationError('Address is required for B2B customers');
+      }
+      if (!data.state_code) {
+        throw new ValidationError('State code is required for B2B customers');
       }
     }
 
@@ -131,7 +148,33 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
 
 router.put('/:id', async (req: AuthRequest, res, next) => {
   try {
-    const data = customerSchema.parse(req.body);
+    // Convert empty strings to undefined for optional fields
+    const cleanedData = {
+      ...req.body,
+      email: req.body.email || undefined,
+      phone: req.body.phone || undefined,
+      tin_number: req.body.tin_number || undefined,
+      address_line1: req.body.address_line1 || undefined,
+      address_line2: req.body.address_line2 || undefined,
+      city: req.body.city || undefined,
+      postcode: req.body.postcode || undefined,
+      state_code: req.body.state_code || undefined,
+    };
+
+    const data = customerSchema.parse(cleanedData);
+
+    // Validate B2B requirements
+    if (data.customer_type === 'B2B') {
+      if (!data.tin_number || data.tin_number.length < 11) {
+        throw new ValidationError('TIN number (11-13 characters) is required for B2B customers');
+      }
+      if (!data.address_line1) {
+        throw new ValidationError('Address is required for B2B customers');
+      }
+      if (!data.state_code) {
+        throw new ValidationError('State code is required for B2B customers');
+      }
+    }
 
     const customer = await Customer.findOneAndUpdate(
       {
@@ -164,7 +207,8 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
     res.json(customer);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', undefined, error.issues));
+      const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+      next(new ValidationError(`Validation failed: ${errorMessages}`, undefined, error.issues));
     } else {
       next(error);
     }
