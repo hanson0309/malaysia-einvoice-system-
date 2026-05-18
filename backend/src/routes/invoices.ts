@@ -86,17 +86,15 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1).max(500),
   quantity: z.number().positive(),
   unit_price: z.number().positive(),
-  tax_type: z.enum(['SST', 'E', 'Z', 'SR', 'OE', 'EXEMPT']),
+  tax_type: z.enum(['SST', 'E', 'Z', 'SR']),
   tax_rate: z.number().min(0).max(100),
   tax_exemption_reason: z.string().max(200).optional(),
 });
 
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1).max(50),
-  invoice_type: z.enum(['01', '02', '03', '04', '11', '12', '13', '14']),
-  classification: z.enum(['consolidated']).default('consolidated'), // Only consolidated
-  classification_code: z.string().length(3).optional(), // MyInvois Classification Code
-  customer_id: z.string().optional(), // Not used for consolidated
+  invoice_type: z.enum(['01', '02', '03', '04']),
+  customer_id: z.string(),
   issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   currency: z.string().length(3).default('MYR'),
@@ -141,9 +139,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
       tenant_id: req.tenantId,
       invoice_number: data.invoice_number,
       invoice_type: data.invoice_type,
-      classification: data.classification,
-      classification_code: data.classification_code,
-      customer_id: req.tenantId, // Always use tenant as customer for consolidated
+      customer_id: new mongoose.Types.ObjectId(data.customer_id),
       issue_date: new Date(data.issue_date),
       due_date: data.due_date ? new Date(data.due_date) : undefined,
       currency: data.currency,
