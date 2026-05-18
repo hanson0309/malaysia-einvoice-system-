@@ -166,6 +166,26 @@ router.post('/', async (req: AuthRequest, res, next) => {
   }
 });
 
+router.get('/next-number', async (req: AuthRequest, res, next) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `INV-${year}${month}-`;
+
+    const count = await Invoice.countDocuments({
+      tenant_id: req.tenantId,
+      invoice_number: { $regex: `^INV-${year}${month}-` },
+      deleted_at: null,
+    });
+
+    const nextNum = String(count + 1).padStart(4, '0');
+    res.json({ invoice_number: `${prefix}${nextNum}` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/', async (req: AuthRequest, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;

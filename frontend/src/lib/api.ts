@@ -69,6 +69,7 @@ export const productApi = {
 export const invoiceApi = {
   getAll: () => api.get('/invoices'),
   getById: (id: string) => api.get(`/invoices/${id}`),
+  getNextNumber: () => api.get<{ invoice_number: string }>('/invoices/next-number'),
   create: (data: any) => api.post('/invoices', data),
   submit: (id: string) => api.post(`/invoices/${id}/submit`),
   delete: (id: string) => api.delete(`/invoices/${id}`),
@@ -111,6 +112,13 @@ export interface IRBTinLookupResponse {
   message?: string;
 }
 
+export interface IRBBatchResult {
+  success: boolean;
+  total: number;
+  succeeded: number;
+  failed: number;
+}
+
 // IRB API
 // Endpoints for submitting invoices to the IRB (Inland Revenue Board) government system
 export const irbApi = {
@@ -120,7 +128,7 @@ export const irbApi = {
    * @returns Promise with submission confirmation and tracking ID
    */
   submitInvoice: (id: string) => api.post<IRBSubmitResponse>(`/irb/submit/${id}`),
-
+  submitBatch: (invoiceIds: string[]) => api.post<IRBBatchResult>('/irb/submit-batch', { invoiceIds }),
   /**
    * Check the submission status of an invoice in the IRB system
    * @param id - The invoice ID to check status for
@@ -134,4 +142,56 @@ export const irbApi = {
    * @returns Promise with TIN and taxpayer information if found
    */
   lookupTin: (nric: string) => api.post<IRBTinLookupResponse>('/irb/tin-lookup', { nric }),
+};
+
+// Auto-consolidation API
+export interface AutoConsolidateSettings {
+  enabled: boolean;
+  day: number;
+  batchSize: number;
+  lastRunAt: string | null;
+  lastStatus: string | null;
+}
+
+export interface AutoConsolidateRunSummary {
+  tenantId: string;
+  tenantName: string;
+  monthLabel: string;
+  totalCandidates: number;
+  batches: number;
+  batchSize: number;
+  succeeded: number;
+  failed: number;
+  results: Array<{
+    success: boolean;
+    invoiceId: string;
+    invoiceNumber: string;
+    uuid?: string;
+    status?: string;
+    error?: string;
+  }>;
+  ranAt: string;
+  error?: string;
+}
+
+export interface JobProgress {
+  running: boolean;
+  source?: 'manual' | 'auto';
+  total?: number;
+  batches?: number;
+  currentBatch?: number;
+  processed?: number;
+  succeeded?: number;
+  failed?: number;
+  startedAt?: string;
+  updatedAt?: string;
+}
+
+export const autoConsolidateApi = {
+  getSettings: () => api.get<AutoConsolidateSettings>('/irb/auto-consolidate/settings'),
+  updateSettings: (data: Partial<Pick<AutoConsolidateSettings, 'enabled' | 'day' | 'batchSize'>>) =>
+    api.put<AutoConsolidateSettings>('/irb/auto-consolidate/settings', data),
+  run: (dryRun = false) =>
+    api.post<AutoConsolidateRunSummary>('/irb/auto-consolidate/run', { dryRun }),
+  getProgress: () => api.get<JobProgress>('/irb/auto-consolidate/progress'),
 };

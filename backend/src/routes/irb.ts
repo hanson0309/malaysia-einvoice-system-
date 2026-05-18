@@ -1,5 +1,8 @@
 import { Router, Response } from 'express';
 import { irbService } from '../services/irbService';
+import { submitInvoiceToIRB, submitInvoiceBatchToIRB, submitConsolidatedBatchToIRB, resolveIRBCredentials } from '../services/irbSubmitter';
+import { runAutoConsolidationForTenant } from '../jobs/autoConsolidate';
+import { progressStore } from '../utils/progressStore';
 import { Invoice } from '../models/Invoice';
 import { Tenant } from '../models/Tenant';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
@@ -21,188 +24,50 @@ router.post('/submit/:invoiceId', async (req: AuthRequest, res: Response) => {
     const tenantId = req.tenantId;
 
     if (!tenantId) {
-      console.log('ERROR: Tenant ID not found');
       return res.status(400).json({ error: 'Tenant ID not found' });
     }
 
-    // 获取发票数据
-    const invoice = await Invoice.findOne({ _id: invoiceId, tenant_id: tenantId })
-      .populate('customer_id')
-      .populate('items.product_id');
+    const result = await submitInvoiceToIRB(String(invoiceId), String(tenantId));
 
-    if (!invoice) {
-      console.log('ERROR: Invoice not found');
-      return res.status(404).json({ error: 'Invoice not found' });
+    if (!result.success && result.error === 'Invoice not found') {
+      return res.status(404).json({ error: result.error });
+    }
+    if (!result.success && result.error === 'Tenant not found') {
+      return res.status(404).json({ error: result.error });
+    }
+    if (!result.success && result.error === 'IRB credentials not configured') {
+      return res.status(400).json({
+        error: 'IRB credentials not configured. Please add credentials to tenant or environment variables.',
+      });
     }
 
-    // 获取租户信息（包含 IRB 凭证）
-    const tenant = await Tenant.findById(tenantId);
-
-    if (!tenant) {
-      console.log('ERROR: Tenant not found');
-      return res.status(404).json({ error: 'Tenant not found' });
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error,
+        details: result.details,
+      });
     }
 
-    // Get credentials: try tenant first, then environment variables
-    let clientId: string;
-    let clientSecret: string;
-
-    if (tenant?.myinvois_client_id && tenant?.myinvois_client_secret) {
-      clientId = tenant.myinvois_client_id;
-      clientSecret = irbService.decrypt(
-        tenant.myinvois_client_secret,
-        tenantId.toString()
-      );
-    } else {
-      const envCreds = irbService.getEnvironmentCredentials();
-      if (!envCreds) {
-        console.log('ERROR: No credentials configured');
-        return res.status(400).json({
-          error: 'IRB credentials not configured. Please add credentials to tenant or environment variables.'
-        });
-      }
-      clientId = envCreds.clientId;
-      clientSecret = envCreds.clientSecret;
-    }
-
-    // 获取 OAuth token
-    const accessToken = await irbService.getToken(
-      clientId,
-      clientSecret
-    );
-
-    // 验证纳税人 (Validate Taxpayer) - Optional, don't block submission if it fails
-    const idType = tenant.type === 1 ? 'NRIC' : 'BRN';
-    const idValue = tenant.company_registration_no.replace(/-/g, '');
-
-    console.log('Validating taxpayer with:', {
-      idType,
-      idValue,
-      tin: tenant.tin_number,
-      tenantType: tenant.type,
-      companyName: tenant.company_name
-    });
-
-    try {
-      await irbService.validateTaxpayer(
-        idType,
-        idValue,
-        tenant.tin_number,
-        accessToken
-      );
-      console.log('✓ Taxpayer validation successful');
-    } catch (validationError: any) {
-      console.warn('⚠️ Taxpayer validation failed (continuing anyway):', validationError.message);
-      console.warn('This is normal for sandbox/testing. The invoice will still be submitted.');
-    }
-
-    // 构建 IRB 发票格式
-    const irbDocument = await buildIRBDocument(invoice, tenant);
-
-    console.log('Built IRB document:', JSON.stringify(irbDocument, null, 2));
-
-    // 提交到 IRB
-    console.log('Submitting document to IRB...');
-    const result = await irbService.submitDocument(
-      irbDocument,
-      invoice.invoice_number,
-      accessToken
-    );
-
-    console.log('IRB submission result:', JSON.stringify(result, null, 2));
-
-    // 处理响应
-    if (result.acceptedDocuments && result.acceptedDocuments.length > 0) {
-      const uuid = result.acceptedDocuments[0].uuid;
-
-      // 轮询 IRB 状态
-      const finalStatus = await irbService.pollDocumentStatus(
-        uuid,
-        accessToken,
-        10,  // maxAttempts
-        5000 // delayMs (5 seconds)
-      );
-
-      // 更新发票状态和签名信息
-      invoice.lhdn_submission_uid = uuid;
-      invoice.lhdn_submitted_at = new Date();
-
-      if (finalStatus.status === 'Valid') {
-        invoice.status = 'accepted';
-        // 保存签名信息（longId 就是 signature）
-        if (finalStatus.longId) {
-          invoice.lhdn_validation_code = finalStatus.longId;
-        }
-        // 保存 QR code URL
-        if (finalStatus.qrCodeUrl) {
-          invoice.lhdn_qr_code = finalStatus.qrCodeUrl;
-        }
-        console.log(`✅ Invoice ${invoice.invoice_number} validated successfully by IRB`);
-      } else if (finalStatus.status === 'Invalid') {
-        invoice.status = 'rejected';
-        console.log(`❌ Invoice ${invoice.invoice_number} rejected by IRB`);
-
-        // 打印详细的验证错误
-        if (finalStatus.validationResults?.validationSteps) {
-          finalStatus.validationResults.validationSteps.forEach((step: any) => {
-            if (step.status === 'Invalid') {
-              console.log('\n=== VALIDATION ERROR ===');
-              console.log('Step:', step.name);
-              console.log('Error:', JSON.stringify(step.error, null, 2));
-            }
-          });
-        }
-      } else {
-        invoice.status = 'submitted';
-      }
-
-      await invoice.save();
-
-      return res.json({
-        success: true,
-        uuid: uuid,
-        status: finalStatus.status,
-        longId: finalStatus.longId,
-        qrCodeUrl: finalStatus.qrCodeUrl,
-        validationResults: finalStatus.validationResults,
-        message: finalStatus.status === 'Valid'
+    return res.json({
+      success: true,
+      uuid: result.uuid,
+      status: result.status,
+      longId: result.longId,
+      qrCodeUrl: result.qrCodeUrl,
+      validationResults: result.details,
+      message:
+        result.status === 'Valid'
           ? 'Invoice submitted and validated successfully'
-          : finalStatus.status === 'Invalid'
+          : result.status === 'Invalid'
           ? 'Invoice submitted but validation failed'
-          : 'Invoice submitted, validation pending'
-      });
-    } else if (result.rejectedDocuments && result.rejectedDocuments.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invoice rejected by IRB',
-        details: result.rejectedDocuments[0].error
-      });
-    } else if (result.error) {
-      // Handle error response from IRB
-      return res.status(400).json({
-        success: false,
-        error: 'IRB API Error',
-        details: result.error
-      });
-    } else {
-      return res.status(500).json({
-        success: false,
-        error: 'Unknown error during submission',
-        fullResponse: result
-      });
-    }
-
+          : 'Invoice submitted, validation pending',
+    });
   } catch (error: any) {
     console.error('IRB submission error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
     return res.status(500).json({
       success: false,
       error: error.message || 'Internal server error',
-      details: error.response?.data
     });
   }
 });
@@ -352,6 +217,179 @@ router.post('/tin-lookup', async (req: AuthRequest, res: Response) => {
       error: error.message || 'Internal server error'
     });
   }
+});
+
+/**
+ * GET /api/v1/irb/auto-consolidate/settings
+ * Returns the current tenant's auto-consolidation configuration.
+ */
+router.get('/auto-consolidate/settings', async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ error: 'Tenant ID not found' });
+
+    const tenant = await Tenant.findById(tenantId).select(
+      'auto_consolidate_enabled auto_consolidate_day auto_consolidate_batch_size auto_consolidate_last_run_at auto_consolidate_last_status'
+    );
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    return res.json({
+      enabled: !!tenant.auto_consolidate_enabled,
+      day: tenant.auto_consolidate_day || 5,
+      batchSize: tenant.auto_consolidate_batch_size || 20,
+      lastRunAt: tenant.auto_consolidate_last_run_at || null,
+      lastStatus: tenant.auto_consolidate_last_status || null,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/v1/irb/auto-consolidate/settings
+ * Update auto-consolidation configuration for the current tenant.
+ */
+router.put('/auto-consolidate/settings', async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ error: 'Tenant ID not found' });
+
+    const { enabled, day, batchSize } = req.body || {};
+    const update: any = {};
+    if (typeof enabled === 'boolean') update.auto_consolidate_enabled = enabled;
+    if (typeof day === 'number' && day >= 1 && day <= 7) update.auto_consolidate_day = day;
+    if (typeof batchSize === 'number' && batchSize >= 1 && batchSize <= 100) {
+      update.auto_consolidate_batch_size = batchSize;
+    }
+
+    const tenant = await Tenant.findByIdAndUpdate(tenantId, { $set: update }, { new: true }).select(
+      'auto_consolidate_enabled auto_consolidate_day auto_consolidate_batch_size auto_consolidate_last_run_at auto_consolidate_last_status'
+    );
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    return res.json({
+      enabled: !!tenant.auto_consolidate_enabled,
+      day: tenant.auto_consolidate_day || 5,
+      batchSize: tenant.auto_consolidate_batch_size || 20,
+      lastRunAt: tenant.auto_consolidate_last_run_at || null,
+      lastStatus: tenant.auto_consolidate_last_status || null,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/v1/irb/auto-consolidate/run
+ * Manually trigger auto-consolidation for the current tenant. Mirrors the
+ * logic the scheduler runs server-side. Body: { dryRun?: boolean, force?: boolean }
+ */
+router.post('/auto-consolidate/run', async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ error: 'Tenant ID not found' });
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const dryRun = !!(req.body && req.body.dryRun);
+
+    if (dryRun) {
+      // Dry-run is fast — block and return the summary directly
+      const summary = await runAutoConsolidationForTenant(tenant, { dryRun: true, source: 'manual' });
+      return res.json(summary);
+    }
+
+    // Non-dry-run: return immediately and process in background so the client
+    // can poll GET /auto-consolidate/progress for real-time updates.
+    res.json({ queued: true, running: true, tenantId });
+
+    // Fire and forget — do not await
+    setImmediate(() => {
+      runAutoConsolidationForTenant(tenant, { dryRun: false, source: 'manual' }).catch((err: any) => {
+        console.error('[IRB] auto-consolidate background run failed:', err.message);
+      });
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  if (size <= 0) return [arr];
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * POST /api/v1/irb/submit-batch
+ * Split selected invoices into batches (per tenant batchSize setting),
+ * combine each batch into ONE consolidated IRB document, submit it, and
+ * apply the result to all invoices in that batch.
+ * Progress is tracked in progressStore and can be polled via GET /auto-consolidate/progress.
+ */
+router.post('/submit-batch', async (req: AuthRequest, res: Response) => {
+  const tenantId = req.tenantId;
+  if (!tenantId) return res.status(400).json({ error: 'Tenant ID not found' });
+
+  const invoiceIds: string[] = req.body?.invoiceIds;
+  if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+    return res.status(400).json({ error: 'invoiceIds must be a non-empty array' });
+  }
+
+  const tenant = await Tenant.findById(tenantId);
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  const batchSize = tenant.auto_consolidate_batch_size || 20;
+  const batches = chunkArray(invoiceIds, batchSize);
+
+  progressStore.start(String(tenantId), {
+    source: 'manual',
+    total: invoiceIds.length,
+    batches: batches.length,
+  });
+  res.json({ queued: true, running: true, total: invoiceIds.length, batches: batches.length });
+
+  setImmediate(async () => {
+    let processed = 0, succeeded = 0, failed = 0;
+    try {
+      const creds = resolveIRBCredentials(tenant);
+      if (!creds) {
+        console.error('[IRB] submit-batch: IRB credentials not configured for tenant', tenantId);
+        return;
+      }
+      const accessToken = await irbService.getToken(creds.clientId, creds.clientSecret);
+
+      for (let i = 0; i < batches.length; i++) {
+        progressStore.update(String(tenantId), { currentBatch: i + 1 });
+        await submitConsolidatedBatchToIRB(batches[i], String(tenantId), {
+          accessToken,
+          tenant,
+          onInvoiceDone: (success) => {
+            processed++;
+            if (success) succeeded++; else failed++;
+            progressStore.update(String(tenantId), { processed, succeeded, failed });
+          },
+        });
+      }
+    } catch (err: any) {
+      console.error('[IRB] submit-batch background failed:', err.message);
+    } finally {
+      progressStore.finish(String(tenantId));
+    }
+  });
+});
+
+/**
+ * GET /api/v1/irb/auto-consolidate/progress
+ * Returns real-time submission progress for the current tenant.
+ */
+router.get('/auto-consolidate/progress', (req: AuthRequest, res: Response) => {
+  const tenantId = req.tenantId;
+  if (!tenantId) return res.status(400).json({ error: 'Tenant ID not found' });
+  const progress = progressStore.get(String(tenantId));
+  return res.json(progress || { running: false });
 });
 
 /**

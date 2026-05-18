@@ -13,6 +13,11 @@ export const config = {
   MYINVOIS_CLIENT_ID: process.env.MYINVOIS_CLIENT_ID || '',
   MYINVOIS_CLIENT_SECRET: process.env.MYINVOIS_CLIENT_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  // Auto-consolidation: when true, scheduler ticks every few minutes,
+  // ignores day-of-month gate and per-month idempotency, and scans the
+  // CURRENT month. When false (production), it only runs on day 1-7,
+  // is idempotent per calendar month, and scans the PREVIOUS month.
+  AUTO_CONSOLIDATE_DEBUG: String(process.env.AUTO_CONSOLIDATE_DEBUG || '').toLowerCase() === 'true',
 };
 
 // Validate required env vars

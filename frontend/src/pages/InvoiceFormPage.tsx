@@ -42,16 +42,19 @@ export default function InvoiceFormPage() {
 
   useEffect(() => {
     loadData();
-    generateInvoiceNumber();
+    generateInvoiceNumber().catch(() => {});
   }, []);
 
-  const generateInvoiceNumber = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const invoiceNumber = `INV-${year}${month}-${random}`;
-    setFormData(prev => ({ ...prev, invoice_number: invoiceNumber }));
+  const generateInvoiceNumber = async () => {
+    try {
+      const res = await invoiceApi.getNextNumber();
+      setFormData(prev => ({ ...prev, invoice_number: res.data.invoice_number }));
+    } catch {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      setFormData(prev => ({ ...prev, invoice_number: `INV-${year}${month}-0001` }));
+    }
   };
 
   const loadData = async () => {
