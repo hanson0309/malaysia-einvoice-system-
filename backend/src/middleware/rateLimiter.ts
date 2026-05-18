@@ -9,10 +9,15 @@ export const sendInvoiceRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 
-  // Rate limit by user ID from JWT token, fallback to IPv6-safe IP
+  // Rate limit by user ID from JWT token, fallback to IP (IPv6-safe)
   keyGenerator: (req: Request) => {
     const authReq = req as AuthRequest;
-    return authReq.user?.user_id || req.ip || '';
+    // If user is authenticated, use user ID
+    if (authReq.user?.user_id) {
+      return `user:${authReq.user.user_id}`;
+    }
+    // Otherwise, let express-rate-limit handle IP (it's IPv6-safe by default)
+    return undefined as any; // Return undefined to use default IP-based key
   },
 
   // Custom error handler
