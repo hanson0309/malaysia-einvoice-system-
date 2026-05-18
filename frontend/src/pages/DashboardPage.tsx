@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Sparkles,
   Calendar,
-  BarChart3,
+  Package,
+  Users,
 } from 'lucide-react';
 import { invoiceApi } from '../lib/api';
 
@@ -472,7 +473,46 @@ export default function DashboardPage() {
                   </motion.div>
                 </Link>
 
-                <Link to="/dashboard/analytics" style={{ textDecoration: 'none' }}>
+                <Link to="/dashboard/products/new" style={{ textDecoration: 'none' }}>
+                  <motion.div
+                    style={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      padding: '1.5rem',
+                      borderRadius: '1rem',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%)',
+                      cursor: 'pointer',
+                    }}
+                    whileHover={{ scale: 1.02, y: -4 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <motion.div
+                          style={{
+                            padding: '0.75rem',
+                            borderRadius: '0.75rem',
+                            background: 'rgba(245, 158, 11, 0.2)',
+                          }}
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          <Package style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+                        </motion.div>
+                        <div>
+                          <p style={{ fontWeight: 600, color: '#f1f5f9', fontSize: '1.125rem' }}>New Product</p>
+                          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Add a new product or service</p>
+                        </div>
+                      </div>
+                      <motion.div animate={{ rotate: [0, 90, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}>
+                        <Plus style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </Link>
+
+                <Link to="/dashboard/customers/new" style={{ textDecoration: 'none' }}>
                   <motion.div
                     style={{
                       position: 'relative',
@@ -497,14 +537,16 @@ export default function DashboardPage() {
                           whileHover={{ rotate: 360 }}
                           transition={{ duration: 0.6 }}
                         >
-                          <BarChart3 style={{ width: '24px', height: '24px', color: '#10b981' }} />
+                          <Users style={{ width: '24px', height: '24px', color: '#10b981' }} />
                         </motion.div>
                         <div>
-                          <p style={{ fontWeight: 600, color: '#f1f5f9', fontSize: '1.125rem' }}>View Analytics</p>
-                          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Business insights & reports</p>
+                          <p style={{ fontWeight: 600, color: '#f1f5f9', fontSize: '1.125rem' }}>New Customer</p>
+                          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Add a new customer</p>
                         </div>
                       </div>
-                      <TrendingUp style={{ width: '24px', height: '24px', color: '#10b981' }} />
+                      <motion.div animate={{ rotate: [0, 90, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 1 }}>
+                        <Plus style={{ width: '24px', height: '24px', color: '#10b981' }} />
+                      </motion.div>
                     </div>
                   </motion.div>
                 </Link>

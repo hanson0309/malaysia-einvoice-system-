@@ -13,6 +13,7 @@ import ProductFormPage from './pages/ProductFormPage';
 import InvoicesPage from './pages/InvoicesPage';
 import InvoiceFormPage from './pages/InvoiceFormPage';
 import InvoiceDetailPage from './pages/InvoiceDetailPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/new" element={<ProductFormPage />} />
             <Route path="products/:id/edit" element={<ProductFormPage />} />

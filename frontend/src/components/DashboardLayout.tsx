@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   X,
-  BarChart3,
   User,
   ChevronDown,
   Users
@@ -29,7 +28,6 @@ export default function DashboardLayout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Products', href: '/dashboard/products', icon: Package },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
