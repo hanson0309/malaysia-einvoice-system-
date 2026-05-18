@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Send, RefreshCw, X, Download, FileText } from 'lucide-react';
+import { ArrowLeft, Send, RefreshCw, X, Download, FileText, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, irbApi } from '../lib/api';
+import SendInvoiceModal from './SendInvoiceModal';
 
 interface Customer {
   _id: string;
@@ -51,6 +52,7 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
   const loadInvoice = useCallback(async () => {
     try {
@@ -218,6 +220,14 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
               >
                 <Download className="w-3 h-3" />
                 Download PDF
+              </button>
+
+              <button
+                onClick={() => setIsSendModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                <Mail className="w-3 h-3" />
+                Send to Customer
               </button>
 
               {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
@@ -394,6 +404,30 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
           </div>
         </motion.div>
       </div>
+
+      {/* Send Invoice Modal */}
+      {invoice && invoice.customer && (
+        <SendInvoiceModal
+          isOpen={isSendModalOpen}
+          onClose={() => setIsSendModalOpen(false)}
+          invoice={{
+            _id: invoice._id,
+            invoice_number: invoice.invoice_number,
+            total_amount: invoice.total_amount,
+          }}
+          customer={{
+            name: invoice.customer.name,
+            email: invoice.customer.email,
+            phone: invoice.customer.phone,
+          }}
+          onSuccess={() => {
+            setIsSendModalOpen(false);
+            loadInvoice();
+            onUpdate();
+          }}
+          invoiceId={invoice._id}
+        />
+      )}
     </>
   );
 }
