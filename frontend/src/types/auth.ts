@@ -13,4 +13,6 @@ export interface RegisterData {
   phone: string;
   password: string;
   sst_registration_no?: string;
+  myinvois_client_id: string;
+  myinvois_client_secret: string;
 }
