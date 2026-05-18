@@ -2,11 +2,14 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticateJWT, authenticateFlexible, AuthRequest } from '../middleware/auth';
 import { extractTenant } from '../middleware/tenant';
+import { sendInvoiceRateLimiter } from '../middleware/rateLimiter';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
-import { Invoice, Customer } from '../models';
+import { Invoice, Customer, InvoiceSending, Tenant } from '../models';
 import { PDFService } from '../services/pdfService';
+import { EmailService } from '../services/EmailService';
+import { WhatsAppService } from '../services/WhatsAppService';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -83,17 +86,15 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1).max(500),
   quantity: z.number().positive(),
   unit_price: z.number().positive(),
-  tax_type: z.enum(['SST', 'E', 'Z', 'SR', 'OE', 'EXEMPT']),
+  tax_type: z.enum(['SST', 'E', 'Z', 'SR']),
   tax_rate: z.number().min(0).max(100),
   tax_exemption_reason: z.string().max(200).optional(),
 });
 
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1).max(50),
-  invoice_type: z.enum(['01', '02', '03', '04', '11', '12', '13', '14']),
-  classification: z.enum(['consolidated']).default('consolidated'), // Only consolidated
-  classification_code: z.string().length(3).optional(), // MyInvois Classification Code
-  customer_id: z.string().optional(), // Not used for consolidated
+  invoice_type: z.enum(['01', '02', '03', '04']),
+  customer_id: z.string(),
   issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   currency: z.string().length(3).default('MYR'),
@@ -138,9 +139,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
       tenant_id: req.tenantId,
       invoice_number: data.invoice_number,
       invoice_type: data.invoice_type,
-      classification: data.classification,
-      classification_code: data.classification_code,
-      customer_id: req.tenantId, // Always use tenant as customer for consolidated
+      customer_id: new mongoose.Types.ObjectId(data.customer_id),
       issue_date: new Date(data.issue_date),
       due_date: data.due_date ? new Date(data.due_date) : undefined,
       currency: data.currency,
@@ -316,6 +315,206 @@ router.post('/:id/submit', async (req: AuthRequest, res, next) => {
       message: 'Invoice submission queued',
       job_id: job.id,
       status: 'validated',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/send', sendInvoiceRateLimiter, async (req: AuthRequest, res, next) => {
+  try {
+    const { send_method, email_subject, email_message, whatsapp_message } = req.body;
+
+    if (!['email', 'whatsapp', 'both'].includes(send_method)) {
+      throw new ValidationError('Invalid send_method. Must be email, whatsapp, or both');
+    }
+
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    }).populate('customer_id');
+
+    if (!invoice) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    const customer = invoice.customer_id as any;
+    if (!customer) {
+      throw new NotFoundError('Customer not found');
+    }
+
+    const tenant = await Tenant.findById(req.tenantId);
+    if (!tenant) {
+      throw new NotFoundError('Tenant not found');
+    }
+
+    // Validate customer has required contact info before creating record
+    if (send_method === 'email' || send_method === 'both') {
+      if (!customer.email) {
+        throw new ValidationError('Customer email is missing');
+      }
+    }
+
+    if (send_method === 'whatsapp' || send_method === 'both') {
+      if (!customer.phone) {
+        throw new ValidationError('Customer phone number is missing');
+      }
+    }
+
+    const sendingRecord = await InvoiceSending.create({
+      tenant_id: req.tenantId,
+      invoice_id: invoice._id,
+      customer_id: customer._id,
+      send_method,
+      email_sent: false,
+      email_status: 'pending',
+      email_to: customer.email || '',
+      whatsapp_link_generated: false,
+      whatsapp_phone: customer.phone || '',
+      sent_by: req.user?.user_id,
+    });
+
+    let emailSent = false;
+    let whatsappLink: string | undefined;
+
+    if (send_method === 'email' || send_method === 'both') {
+
+      try {
+        const pdfBuffer = await PDFService.generateInvoicePDFBuffer({
+          invoice_number: invoice.invoice_number,
+          invoice_type: invoice.invoice_type,
+          issue_date: invoice.issue_date,
+          due_date: invoice.due_date,
+          customer: {
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            address_line1: customer.address_line1,
+            address_line2: customer.address_line2,
+            city: customer.city,
+            postcode: customer.postcode,
+            state_code: customer.state_code,
+          },
+          items: invoice.items,
+          subtotal: invoice.subtotal,
+          tax: invoice.tax_amount,
+          total: invoice.total_amount,
+          currency: invoice.currency,
+          payment_method: invoice.payment_method,
+        });
+
+        const emailService = new EmailService();
+        await emailService.sendInvoice({
+          to: customer.email,
+          invoice: {
+            invoice_number: invoice.invoice_number,
+            issue_date: invoice.issue_date,
+            due_date: invoice.due_date,
+            total_amount: invoice.total_amount,
+          },
+          customer: { name: customer.name },
+          tenant: {
+            company_name: tenant.company_name,
+            email: tenant.email,
+            phone: tenant.phone,
+          },
+          pdfBuffer,
+          customSubject: email_subject,
+          customMessage: email_message,
+        });
+
+        await InvoiceSending.updateOne(
+          { _id: sendingRecord._id },
+          {
+            email_sent: true,
+            email_sent_at: new Date(),
+            email_status: 'sent',
+          }
+        );
+
+        emailSent = true;
+      } catch (error: any) {
+        await InvoiceSending.updateOne(
+          { _id: sendingRecord._id },
+          {
+            email_status: 'failed',
+            email_error_message: error.message,
+          }
+        );
+      }
+    }
+
+    if (send_method === 'whatsapp' || send_method === 'both') {
+      try {
+        whatsappLink = WhatsAppService.generateInvoiceLink({
+          phone: customer.phone,
+          invoice: {
+            invoice_number: invoice.invoice_number,
+            issue_date: invoice.issue_date,
+            due_date: invoice.due_date,
+            total_amount: invoice.total_amount,
+          },
+          customer: { name: customer.name },
+          tenant: {
+            company_name: tenant.company_name,
+            phone: tenant.phone,
+          },
+          customMessage: whatsapp_message,
+        });
+
+        await InvoiceSending.updateOne(
+          { _id: sendingRecord._id },
+          {
+            whatsapp_link_generated: true,
+            whatsapp_link: whatsappLink,
+          }
+        );
+      } catch (error: any) {
+        await InvoiceSending.updateOne(
+          { _id: sendingRecord._id },
+          {
+            whatsapp_error_message: error.message,
+          }
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        sending_id: sendingRecord._id,
+        email_sent: emailSent,
+        whatsapp_link: whatsappLink,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/sending-history', async (req: AuthRequest, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      tenant_id: req.tenantId,
+      deleted_at: null,
+    });
+
+    if (!invoice) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    const history = await InvoiceSending.find({
+      tenant_id: req.tenantId,
+      invoice_id: req.params.id,
+    })
+      .populate('sent_by', 'email')
+      .sort({ created_at: -1 });
+
+    res.json({
+      success: true,
+      data: history,
     });
   } catch (error) {
     next(error);

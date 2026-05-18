@@ -5,13 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { autoConsolidateApi, type JobProgress } from '../lib/api';
 import {
   LayoutDashboard,
-  Users,
   Package,
   FileText,
   Settings as SettingsIcon,
   LogOut,
   Menu,
-  X
+  X,
+  BarChart3,
+  User,
+  ChevronDown,
+  Users
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -19,6 +22,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [profileOpen, setProfileOpen] = React.useState(false);
 
   // Global IRB submission progress bar (visible on all pages)
   const [irbProgress, setIrbProgress] = useState<JobProgress | null>(null);
@@ -81,8 +85,9 @@ export default function DashboardLayout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Customers', href: '/dashboard/customers', icon: Users },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Products', href: '/dashboard/products', icon: Package },
+    { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
     { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
@@ -207,48 +212,6 @@ export default function DashboardLayout() {
               })}
             </div>
           </nav>
-
-          {/* User section */}
-          <div style={{ padding: '1rem', borderTop: '1px solid rgba(139, 92, 246, 0.2)' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.75rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-              border: '1px solid rgba(139, 92, 246, 0.2)'
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.email}
-                </p>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                  Account Active
-                </p>
-              </div>
-              <motion.button
-                onClick={handleLogout}
-                style={{
-                  marginLeft: '0.75rem',
-                  padding: '0.5rem',
-                  borderRadius: '0.5rem',
-                  color: '#94a3b8',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                whileHover={{ scale: 1.1, color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)' }}
-                whileTap={{ scale: 0.95 }}
-                title="Logout"
-              >
-                <LogOut style={{ width: '20px', height: '20px' }} />
-              </motion.button>
-            </div>
-          </div>
         </div>
       </motion.aside>
 
@@ -289,6 +252,7 @@ export default function DashboardLayout() {
             </motion.button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* System Status */}
               <motion.div
                 style={{
                   padding: '0.5rem 1rem',
@@ -303,6 +267,145 @@ export default function DashboardLayout() {
                   System Online
                 </span>
               </motion.div>
+
+              {/* Profile Dropdown */}
+              <div style={{ position: 'relative' }}>
+                <motion.button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.75rem',
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
+                    border: '1px solid rgba(139, 92, 246, 0.2)',
+                    cursor: 'pointer',
+                    color: '#f1f5f9'
+                  }}
+                  whileHover={{ scale: 1.02, background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%)' }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <User style={{ width: '18px', height: '18px', color: 'white' }} />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f1f5f9' }}>
+                      {user?.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      Profile
+                    </p>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: profileOpen ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown style={{ width: '16px', height: '16px', color: '#94a3b8' }} />
+                  </motion.div>
+                </motion.button>
+
+                {/* Dropdown Menu */}
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 0.5rem)',
+                      right: 0,
+                      minWidth: '240px',
+                      background: 'rgba(30, 41, 59, 0.98)',
+                      backdropFilter: 'blur(20px)',
+                      borderRadius: '0.75rem',
+                      border: '1px solid rgba(139, 92, 246, 0.2)',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                      overflow: 'hidden',
+                      zIndex: 50
+                    }}
+                  >
+                    {/* Profile Info */}
+                    <div style={{
+                      padding: '1rem',
+                      borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                    }}>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '0.25rem' }}>
+                        {user?.email}
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Account Active
+                      </p>
+                    </div>
+
+                    {/* Profile Link */}
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setProfileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem 1rem',
+                        color: '#94a3b8',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+                        e.currentTarget.style.color = '#8b5cf6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#94a3b8';
+                      }}
+                    >
+                      <User style={{ width: '18px', height: '18px' }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>My Profile</span>
+                    </Link>
+
+                    {/* Logout Button */}
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        handleLogout();
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem 1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        borderTop: '1px solid rgba(139, 92, 246, 0.2)',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        fontSize: '0.875rem',
+                        fontWeight: 500
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <LogOut style={{ width: '18px', height: '18px' }} />
+                      <span>Logout</span>
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </div>
         </div>

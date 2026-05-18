@@ -5,7 +5,7 @@ export interface IInvoiceItem {
   description: string;
   quantity: number;
   unit_price: number;
-  tax_type: 'SST' | 'E' | 'Z' | 'SR' | 'OE' | 'EXEMPT';
+  tax_type: 'SST' | 'E' | 'Z' | 'SR';
   tax_rate: number;
   tax_amount: number;
   tax_exemption_reason?: string;
@@ -16,9 +16,7 @@ export interface IInvoice extends Document {
   tenant_id: mongoose.Types.ObjectId;
   invoice_number: string;
   internal_reference_no?: string;
-  invoice_type: '01' | '02' | '03' | '04' | '11' | '12' | '13' | '14';
-  classification: 'consolidated'; // Only Consolidated e-Invoice
-  classification_code?: string; // MyInvois Classification Code (001-045)
+  invoice_type: '01' | '02' | '03' | '04';
   original_invoice_id?: mongoose.Types.ObjectId;
   original_invoice_number?: string;
   customer_id: mongoose.Types.ObjectId;
@@ -58,13 +56,7 @@ const InvoiceItemSchema = new Schema<IInvoiceItem>({
   tax_type: {
     type: String,
     required: true,
-    enum: ['SST', 'E', 'Z', 'SR', 'OE', 'EXEMPT'],
-    // SST: Sales & Service Tax (6% or 10%)
-    // E: Exempt (0% - personal income, salary, certain education/medical)
-    // Z: Zero Rated (0% - exports, essential goods)
-    // SR: Standard Rate (variable rate)
-    // OE: Out of Scope/Exempt
-    // EXEMPT: Tax Exempt (for personal tax relief items)
+    enum: ['SST', 'E', 'Z', 'SR'],
   },
   tax_rate: { type: Number, required: true },
   tax_amount: { type: Number, required: true },
@@ -80,18 +72,8 @@ const InvoiceSchema = new Schema<IInvoice>(
     invoice_type: {
       type: String,
       required: true,
-      enum: ['01', '02', '03', '04', '11', '12', '13', '14'],
-      // 01: Invoice, 02: Credit Note, 03: Debit Note, 04: Refund Note
-      // 11: Self-billed Invoice, 12: Self-billed Credit Note
-      // 13: Self-billed Debit Note, 14: Self-billed Refund Note
+      enum: ['01', '02', '03', '04'],
     },
-    classification: {
-      type: String,
-      required: true,
-      enum: ['consolidated'],
-      default: 'consolidated',
-    },
-    classification_code: { type: String, maxlength: 3 }, // MyInvois Classification Code
     original_invoice_id: { type: Schema.Types.ObjectId, ref: 'Invoice' },
     original_invoice_number: { type: String, maxlength: 50 },
     customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },

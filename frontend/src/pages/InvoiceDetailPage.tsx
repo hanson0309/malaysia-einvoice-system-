@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, RefreshCw, X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { invoiceApi, irbApi } from '../lib/api';
+import SendInvoiceModal from '../components/SendInvoiceModal';
 
 interface InvoiceData {
   _id: string;
@@ -28,6 +30,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
   useEffect(() => {
     loadInvoice();
@@ -49,17 +52,17 @@ export default function InvoiceDetailPage() {
 
     try {
       await irbApi.submitInvoice(id!);
-      alert('发票已成功提交到 IRB！');
+      toast.success('发票已成功提交到 IRB！');
       loadInvoice();
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || '提交失败';
 
       if (errorMsg.includes('credentials not configured')) {
-        alert('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
+        toast.error('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
       } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
-        alert('网络连接失败，请稍后重试');
+        toast.error('网络连接失败，请稍后重试');
       } else {
-        alert(`提交失败：${errorMsg}`);
+        toast.error(`提交失败：${errorMsg}`);
       }
     }
   };
@@ -74,14 +77,14 @@ export default function InvoiceDetailPage() {
       const currentStatus = invoice.status;
 
       if (newStatus !== currentStatus) {
-        alert(`状态已更新为：${newStatus}`);
+        toast.success(`状态已更新为：${newStatus}`);
       } else {
-        alert(`状态无变化，仍为：${currentStatus}`);
+        toast.success(`状态无变化，仍为：${currentStatus}`);
       }
 
       await loadInvoice();
     } catch (error: any) {
-      alert('无法获取最新状态，请稍后重试');
+      toast.error('无法获取最新状态，请稍后重试');
     } finally {
       setIsRefreshing(false);
     }
@@ -116,6 +119,7 @@ export default function InvoiceDetailPage() {
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-[#2d3748]/95 z-50 flex items-center justify-center p-6">
       {/* Close button - top left */}
       <button
@@ -150,15 +154,25 @@ export default function InvoiceDetailPage() {
             <span className="text-xs">Back to Invoices</span>
           </button>
 
-          {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {invoice.status === 'draft' && !invoice.lhdn_submission_uid && (
+              <button
+                onClick={handleSubmit}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                <Send className="w-3 h-3" />
+                Submit to IRB
+              </button>
+            )}
+
             <button
-              onClick={handleSubmit}
+              onClick={() => setIsSendModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-md transition-colors"
             >
               <Send className="w-3 h-3" />
-              Submit to IRB
+              Send to Customer
             </button>
-          )}
+          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -322,6 +336,30 @@ export default function InvoiceDetailPage() {
           )}
         </div>
       </motion.div>
+
+      {/* Send Invoice Modal */}
+      {invoice && invoice.customer && (
+        <SendInvoiceModal
+          isOpen={isSendModalOpen}
+          onClose={() => setIsSendModalOpen(false)}
+          invoice={{
+            _id: invoice._id,
+            invoice_number: invoice.invoice_number,
+            total_amount: invoice.total_amount,
+          }}
+          customer={{
+            name: invoice.customer.name,
+            email: invoice.customer.email,
+            phone: invoice.customer.phone,
+          }}
+          onSuccess={() => {
+            setIsSendModalOpen(false);
+          }}
+          invoiceId={invoice._id}
+        />
+      )}
+
     </div>
+    </>
   );
 }

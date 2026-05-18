@@ -404,12 +404,10 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
   // Remove hyphens from NRIC/BRN for document format
   const supplierIdValue = tenant.company_registration_no.replace(/-/g, '');
 
-  // Format date and time properly - use invoice's issue date, not current time
-  // Use the invoice's issue_date and set time to start of day to avoid timezone issues
-  const invoiceDate = new Date(invoice.issue_date);
-  const issueDate = invoiceDate.toISOString().split('T')[0];
-  // Use a safe time in the past (00:00:00Z) to avoid "future date" errors
-  const issueTime = '00:00:00Z';
+  // Format date and time properly - use current date/time for submission
+  const now = new Date();
+  const issueDate = now.toISOString().split('T')[0];
+  const issueTime = now.toISOString().split('T')[1].split('.')[0] + 'Z';
 
   const document = {
     _D: "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
@@ -422,9 +420,6 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
         IssueTime: [{ _: issueTime }],
         InvoiceTypeCode: [{ _: "01", listVersionID: "1.0" }],
         DocumentCurrencyCode: [{ _: "MYR" }],
-
-        // Note: InvoiceClassification is NOT supported in MyInvois API
-        // Classification codes are used internally for categorization only
 
         // Signature placeholder (required for v1.0, validation disabled)
         Signature: [
@@ -473,27 +468,25 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
           }
         ],
 
-        // Customer Party
-        // For consolidated invoices, use a generic "General Public" customer
-        // Cannot use same TIN/ID as supplier for consolidated invoices
+        // Customer Party - Match successful invoice format with all required fields
         AccountingCustomerParty: [
           {
             Party: [
               {
                 PartyIdentification: [
-                  { ID: [{ _: "EI00000000010", schemeID: "TIN" }] },
-                  { ID: [{ _: "NA", schemeID: "NRIC" }] }
+                  { ID: [{ _: invoice.customer_id?.tin_number || 'EI00000000010', schemeID: "TIN" }] },
+                  { ID: [{ _: invoice.customer_id?.registration_no || '900101011234', schemeID: invoice.customer_id?.id_type || "NRIC" }] }
                 ],
                 PartyLegalEntity: [
-                  { RegistrationName: [{ _: "General Public" }] }
+                  { RegistrationName: [{ _: invoice.customer_id?.name || 'Customer Name' }] }
                 ],
                 PostalAddress: [
                   {
-                    CityName: [{ _: tenant.city || 'Kuala Lumpur' }],
-                    PostalZone: [{ _: tenant.postcode || '50000' }],
-                    CountrySubentityCode: [{ _: tenant.state_code || "14" }],
+                    CityName: [{ _: invoice.customer_id?.city || 'Kuala Lumpur' }],
+                    PostalZone: [{ _: invoice.customer_id?.postcode || '50000' }],
+                    CountrySubentityCode: [{ _: invoice.customer_id?.state_code || "14" }],
                     AddressLine: [
-                      { Line: [{ _: tenant.address_line1 || 'Address Line 1' }] }
+                      { Line: [{ _: invoice.customer_id?.address_line1 || 'Address Line 1' }] }
                     ],
                     Country: [
                       { IdentificationCode: [{ _: "MYS", listID: "3166-1", listAgencyID: "ISO" }] }
@@ -502,8 +495,8 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
                 ],
                 Contact: [
                   {
-                    Telephone: [{ _: tenant.phone || "+60123456789" }],
-                    ElectronicMail: [{ _: tenant.email || "contact@example.com" }]
+                    Telephone: [{ _: invoice.customer_id?.phone || "+60123456789" }],
+                    ElectronicMail: [{ _: invoice.customer_id?.email || "customer@example.com" }]
                   }
                 ]
               }
@@ -576,7 +569,7 @@ async function buildIRBDocument(invoice: any, tenant: any): Promise<any> {
             {
               CommodityClassification: [
                 {
-                  ItemClassificationCode: [{ _: invoice.classification_code || "001", listID: "CLASS" }]
+                  ItemClassificationCode: [{ _: "001", listID: "CLASS" }]
                 }
               ],
               Description: [{ _: item.description }]

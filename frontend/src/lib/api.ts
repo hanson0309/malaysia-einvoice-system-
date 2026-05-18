@@ -64,6 +64,40 @@ export const productApi = {
   delete: (id: string) => api.delete(`/products/${id}`),
 };
 
+// Invoice Sending Types
+export interface SendInvoiceData {
+  send_method: 'email' | 'whatsapp' | 'both';
+  email_subject?: string;
+  email_message?: string;
+  whatsapp_message?: string;
+}
+
+export interface SendInvoiceResponse {
+  success: boolean;
+  data: {
+    sending_id: string;
+    email_sent: boolean;
+    whatsapp_link?: string;
+  };
+}
+
+export interface SendingHistoryItem {
+  _id: string;
+  send_method: 'email' | 'whatsapp' | 'both';
+  email_sent: boolean;
+  email_sent_at?: string;
+  email_status: 'pending' | 'sent' | 'failed';
+  email_error_message?: string;
+  email_to: string;
+  whatsapp_link_generated: boolean;
+  whatsapp_link?: string;
+  whatsapp_phone: string;
+  sent_by: {
+    email: string;
+  };
+  created_at: string;
+}
+
 // Invoice API
 // Note: invoiceApi.submit() is the legacy MyInvois endpoint (being replaced by IRB system)
 export const invoiceApi = {
@@ -74,8 +108,11 @@ export const invoiceApi = {
   submit: (id: string) => api.post(`/invoices/${id}/submit`),
   delete: (id: string) => api.delete(`/invoices/${id}`),
   submitToIRB: (id: string) => api.post<IRBSubmitResponse>(`/irb/submit/${id}`),
+  send: (id: string, data: SendInvoiceData) =>
+    api.post<SendInvoiceResponse>(`/invoices/${id}/send`, data),
+  getSendingHistory: (id: string) =>
+    api.get<{ success: boolean; data: SendingHistoryItem[] }>(`/invoices/${id}/sending-history`),
 };
-
 // Invoice Template API
 export const invoiceTemplateApi = {
   getAll: () => api.get('/invoice-templates'),

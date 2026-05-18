@@ -33,6 +33,21 @@ interface InvoiceData {
 }
 
 export class PDFService {
+  static generateInvoicePDFBuffer(invoice: InvoiceData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Build the PDF content
+      this.buildInvoicePDF(doc, invoice);
+      doc.end();
+    });
+  }
+
   static generateInvoicePDF(invoice: InvoiceData, res: Response) {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
@@ -46,6 +61,14 @@ export class PDFService {
     // Pipe PDF to response
     doc.pipe(res);
 
+    // Build the PDF content
+    this.buildInvoicePDF(doc, invoice);
+
+    // Finalize PDF
+    doc.end();
+  }
+
+  private static buildInvoicePDF(doc: typeof PDFDocument.prototype, invoice: InvoiceData) {
     // Header
     this.generateHeader(doc, invoice);
 
@@ -57,9 +80,6 @@ export class PDFService {
 
     // Footer
     this.generateFooter(doc);
-
-    // Finalize PDF
-    doc.end();
   }
 
   private static generateHeader(doc: typeof PDFDocument.prototype, invoice: InvoiceData) {
