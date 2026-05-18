@@ -19,6 +19,11 @@ export interface ITenant extends Document {
   myinvois_client_secret?: string;
   myinvois_access_token?: string;
   myinvois_token_expiry?: Date;
+  auto_consolidate_enabled?: boolean;
+  auto_consolidate_day?: number; // day of month to trigger (1-7), default 5
+  auto_consolidate_batch_size?: number; // chunk size when submitting, default 20
+  auto_consolidate_last_run_at?: Date;
+  auto_consolidate_last_status?: string;
   deleted_at?: Date;
   created_at: Date;
   updated_at: Date;
@@ -44,6 +49,11 @@ const TenantSchema = new Schema<ITenant>(
     myinvois_client_secret: { type: String, maxlength: 255 },
     myinvois_access_token: { type: String },
     myinvois_token_expiry: { type: Date },
+    auto_consolidate_enabled: { type: Boolean, default: false },
+    auto_consolidate_day: { type: Number, default: 5, min: 1, max: 7 },
+    auto_consolidate_batch_size: { type: Number, default: 20, min: 1, max: 100 },
+    auto_consolidate_last_run_at: { type: Date },
+    auto_consolidate_last_status: { type: String, maxlength: 500 },
     deleted_at: { type: Date },
   },
   {

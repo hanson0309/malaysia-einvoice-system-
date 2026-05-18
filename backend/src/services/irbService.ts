@@ -14,8 +14,9 @@ interface TaxpayerSearchResult {
 }
 
 interface DocumentSubmissionResponse {
-  acceptedDocuments?: Array<{ uuid: string }>;
-  rejectedDocuments?: Array<{ error: any }>;
+  submissionUID?: string;
+  acceptedDocuments?: Array<{ uuid: string; invoiceCodeNumber: string }>;
+  rejectedDocuments?: Array<{ invoiceCodeNumber: string; error: any }>;
   error?: any;
   statusCode?: number;
 }
@@ -63,7 +64,7 @@ class IRBService {
         }
       );
 
-      return response.data.access_token;
+      return (response.data as any).access_token;
     } catch (error: any) {
       console.error('=== IRB TOKEN ERROR ===');
       console.error('Status:', error.response?.status);
@@ -103,7 +104,7 @@ class IRBService {
         }
       );
 
-      return response.data.tin;
+      return (response.data as any).tin;
     } catch (error: any) {
       if (error.response?.status === 429) {
         const resetTime = error.response.headers['x-rate-limit-reset'];
@@ -189,14 +190,58 @@ class IRBService {
         }
       );
 
-      return response.data;
+      return response.data as DocumentSubmissionResponse;
     } catch (error: any) {
       console.error('=== SUBMISSION ERROR ===');
       console.error('Status:', error.response?.status);
       console.error('Data:', JSON.stringify(error.response?.data, null, 2));
 
       if (error.response) {
-        return error.response.data;
+        return error.response.data as DocumentSubmissionResponse;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Submit multiple invoices in a single API call to MyInvois.
+   * Each entry in docs maps to one element in the documents[] array sent to the API.
+   */
+  async submitDocuments(
+    docs: Array<{ document: any; codeNumber: string }>,
+    accessToken: string
+  ): Promise<DocumentSubmissionResponse> {
+    try {
+      const documents = docs.map(({ document, codeNumber }) => {
+        const jsonString = JSON.stringify(document, null, 0);
+        const base64String = Buffer.from(jsonString).toString('base64');
+        const documentHash = crypto
+          .createHash('sha256')
+          .update(base64String, 'base64')
+          .digest('hex')
+          .toUpperCase();
+        return { format: 'JSON', documentHash, codeNumber, document: base64String };
+      });
+
+      const response = await axios.post(
+        `${this.baseUrl}/api/v1.0/documentsubmissions/`,
+        { documents },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      return response.data as DocumentSubmissionResponse;
+    } catch (error: any) {
+      console.error('=== BATCH SUBMISSION ERROR ===');
+      console.error('Status:', error.response?.status);
+      console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+
+      if (error.response) {
+        return error.response.data as DocumentSubmissionResponse;
       }
       throw error;
     }

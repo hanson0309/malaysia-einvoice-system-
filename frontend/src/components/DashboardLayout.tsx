@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { autoConsolidateApi, type JobProgress } from '../lib/api';
 import {
   LayoutDashboard,
   Package,
   FileText,
+  Settings as SettingsIcon,
   LogOut,
   Menu,
   X,
@@ -21,6 +23,60 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
+  // Global IRB submission progress bar (visible on all pages)
+  const [irbProgress, setIrbProgress] = useState<JobProgress | null>(null);
+  const [showIrbProgress, setShowIrbProgress] = useState(false);
+  const irbPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoConsoTriggedRef = useRef(false);
+  const isDismissedRef = useRef(false);
+  const autoCloseScheduledRef = useRef(false);
+
+  // On mount: check if today is 1st-7th and auto-consolidate is enabled → trigger automatically
+  useEffect(() => {
+    if (!user || autoConsoTriggedRef.current) return;
+    const day = new Date().getDate();
+    if (day < 1 || day > 7) return;
+
+    autoConsoTriggedRef.current = true;
+    autoConsolidateApi.getSettings().then((res) => {
+      if (res.data.enabled) {
+        autoConsolidateApi.run(false).catch(() => {});
+        setShowIrbProgress(true);
+      }
+    }).catch(() => {});
+  }, [user]);
+
+  // Poll progress every 1s; slow to 10s when idle
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const { data } = await autoConsolidateApi.getProgress();
+        setIrbProgress(data);
+        if (data.running) {
+          // New job started — reset dismissed flag so bar shows again
+          isDismissedRef.current = false;
+          autoCloseScheduledRef.current = false;
+          setShowIrbProgress(true);
+        } else if ((data.total ?? 0) > 0 && !isDismissedRef.current) {
+          setShowIrbProgress(true);
+        }
+        // Auto-hide 8 seconds after job finishes (schedule only once per completion)
+        if (!data.running && (data.total ?? 0) > 0 && (data.processed ?? 0) >= (data.total ?? 0) && !autoCloseScheduledRef.current) {
+          autoCloseScheduledRef.current = true;
+          setTimeout(() => {
+            setShowIrbProgress(false);
+            isDismissedRef.current = true;
+          }, 8000);
+        }
+      } catch {}
+    };
+    poll();
+    if (irbPollRef.current) clearInterval(irbPollRef.current);
+    const interval = irbProgress?.running ? 1000 : 10000;
+    irbPollRef.current = setInterval(poll, interval);
+    return () => { if (irbPollRef.current) clearInterval(irbPollRef.current); };
+  }, [irbProgress?.running]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -31,6 +87,7 @@ export default function DashboardLayout() {
     { name: 'Products', href: '/dashboard/products', icon: Package },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
+    { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -362,6 +419,71 @@ export default function DashboardLayout() {
           </motion.div>
         </main>
       </motion.div>
+
+      {/* Global IRB Submission Progress Bar — fixed bottom overlay, visible on all pages */}
+      <AnimatePresence>
+        {showIrbProgress && irbProgress && (irbProgress.running || (irbProgress.total ?? 0) > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: sidebarOpen ? 288 : 0,
+              right: 0,
+              zIndex: 9999,
+              background: 'rgba(15, 23, 42, 0.97)',
+              borderTop: '1px solid rgba(139, 92, 246, 0.4)',
+              padding: '0.75rem 1.5rem',
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#c4b5fd' }}>
+                {irbProgress.running ? '⚡ Processing E-Invoice Submission...' : '✅ Submission Complete'}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  {irbProgress.processed ?? 0}/{irbProgress.total ?? 0} invoices
+                  {(irbProgress.succeeded ?? 0) > 0 && <span style={{ color: '#34d399', marginLeft: '0.5rem' }}>✓ {irbProgress.succeeded}</span>}
+                  {(irbProgress.failed ?? 0) > 0 && <span style={{ color: '#f87171', marginLeft: '0.5rem' }}>✗ {irbProgress.failed}</span>}
+                </span>
+                <button
+                  onClick={() => { setShowIrbProgress(false); isDismissedRef.current = true; }}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px 6px', fontSize: '1rem', lineHeight: 1 }}
+                >×</button>
+              </div>
+            </div>
+            <div style={{ width: '100%', height: '6px', background: 'rgba(71,85,105,0.5)', borderRadius: '3px', overflow: 'hidden' }}>
+              <motion.div
+                animate={{ width: `${irbProgress.total ? Math.round(((irbProgress.processed ?? 0) / irbProgress.total) * 100) : 0}%` }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                style={{
+                  height: '100%',
+                  background: irbProgress.running
+                    ? 'linear-gradient(90deg, #7c3aed, #8b5cf6, #a78bfa)'
+                    : 'linear-gradient(90deg, #059669, #34d399)',
+                  borderRadius: '3px',
+                  backgroundSize: '200% 100%',
+                }}
+              />
+            </div>
+            {irbProgress.running && (
+              <div style={{ display: 'flex', gap: '4px', marginTop: '6px', justifyContent: 'center' }}>
+                {[0, 150, 300].map(delay => (
+                  <div key={delay} style={{
+                    width: '4px', height: '4px', borderRadius: '50%', background: '#8b5cf6',
+                    animation: 'bounce 1s infinite',
+                    animationDelay: `${delay}ms`
+                  }} />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

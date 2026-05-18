@@ -2,6 +2,7 @@ import { app } from './app';
 import { config } from './config/env';
 import { logger } from './utils/logger';
 import { connectDB } from './config/database';
+import { startAutoConsolidateScheduler } from './jobs/scheduler';
 
 const PORT = config.PORT;
 
@@ -11,6 +12,10 @@ const startServer = async () => {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`, { env: config.NODE_ENV });
   });
+
+  // Start in-process scheduler that runs auto-consolidation
+  // monthly (1st-7th). Runs server-side regardless of user login state.
+  startAutoConsolidateScheduler();
 };
 
 startServer();
