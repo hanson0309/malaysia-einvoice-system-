@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Send, RefreshCw, X, Download, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { invoiceApi, irbApi } from '../lib/api';
 
 interface Customer {
@@ -74,11 +75,17 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
 
       // 显示详细结果
       if (response.data.status === 'Valid') {
-        alert(`✅ 发票已成功提交并验证！\n\nUUID: ${response.data.uuid}\nSignature: ${response.data.longId}\n\n状态已更新为 "accepted"`);
+        toast.success(`✅ 发票已成功提交并验证！\n\nUUID: ${response.data.uuid}\nSignature: ${response.data.longId}\n\n状态已更新为 "accepted"`, {
+          duration: 5000,
+        });
       } else if (response.data.status === 'Invalid') {
-        alert(`⚠️ 发票已提交但验证失败\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status}`);
+        toast.error(`⚠️ 发票已提交但验证失败\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status}`, {
+          duration: 5000,
+        });
       } else {
-        alert(`发票已提交到 IRB\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status || 'pending'}`);
+        toast.success(`发票已提交到 IRB\n\nUUID: ${response.data.uuid}\n状态: ${response.data.status || 'pending'}`, {
+          duration: 5000,
+        });
       }
 
       await loadInvoice();
@@ -94,11 +101,11 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
       const errorMsg = error.response?.data?.error || '提交失败';
 
       if (errorMsg.includes('credentials not configured')) {
-        alert('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
+        toast.error('IRB 凭证未配置，请联系系统管理员配置 MyInvois Client ID 和 Secret。');
       } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
-        alert('网络连接失败，请稍后重试');
+        toast.error('网络连接失败，请稍后重试');
       } else {
-        alert(`提交失败：${errorMsg}`);
+        toast.error(`提交失败：${errorMsg}`);
       }
     }
   };
@@ -113,15 +120,17 @@ export default function InvoiceDetailModal({ invoiceId, onClose, onUpdate }: Inv
       const currentStatus = invoice.status;
 
       if (newStatus !== currentStatus) {
-        alert(`状态已更新为：${newStatus}`);
+        toast.success(`状态已更新为：${newStatus}`);
       } else {
-        alert(`状态无变化，仍为：${currentStatus}`);
+        toast(`状态无变化，仍为：${currentStatus}`, {
+          icon: 'ℹ️',
+        });
       }
 
       await loadInvoice();
       onUpdate();
     } catch (error: any) {
-      alert('无法获取最新状态，请稍后重试');
+      toast.error('无法获取最新状态，请稍后重试');
     } finally {
       setIsRefreshing(false);
     }

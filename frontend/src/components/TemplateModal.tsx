@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, X, Trash2, Save } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { invoiceTemplateApi } from '../lib/api';
 
 interface InvoiceTemplate {
@@ -64,15 +65,16 @@ export default function TemplateModal({
     try {
       await invoiceTemplateApi.delete(id);
       await loadTemplates();
+      toast.success('Template deleted successfully');
     } catch (error) {
       console.error('Failed to delete template:', error);
-      alert('Failed to delete template');
+      toast.error('Failed to delete template');
     }
   };
 
   const handleSave = () => {
     if (!templateName.trim()) {
-      alert('Please enter a template name');
+      toast.error('Please enter a template name');
       return;
     }
 

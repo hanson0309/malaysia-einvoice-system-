@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { productApi } from '../lib/api';
 import '../styles/dashboard.css';
 
@@ -40,9 +41,10 @@ export default function ProductsPage() {
     try {
       await productApi.delete(id);
       setProducts(products.filter((p) => p._id !== id));
+      toast.success('Product deleted successfully');
     } catch (error) {
       console.error('Failed to delete product:', error);
-      alert('Failed to delete product');
+      toast.error('Failed to delete product');
     }
   };
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, Trash2, Search, FileText, Filter, CheckSquare, Square, Send, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { invoiceApi } from '../lib/api';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
 
@@ -80,9 +81,10 @@ export default function InvoicesPage() {
     try {
       await invoiceApi.delete(id);
       await loadInvoices();
+      toast.success('Invoice deleted successfully');
     } catch (error) {
       console.error('Failed to delete invoice:', error);
-      alert('Failed to delete invoice');
+      toast.error('Failed to delete invoice');
     }
   };
 
@@ -111,7 +113,7 @@ export default function InvoicesPage() {
     });
 
     if (draftInvoices.length === 0) {
-      alert('Only draft invoices can be deleted');
+      toast.error('Only draft invoices can be deleted');
       return;
     }
 
@@ -121,16 +123,17 @@ export default function InvoicesPage() {
       await Promise.all(draftInvoices.map(id => invoiceApi.delete(id)));
       setSelectedInvoices(new Set());
       await loadInvoices();
+      toast.success(`${draftInvoices.length} invoice(s) deleted successfully`);
     } catch (error) {
       console.error('Failed to delete invoices:', error);
-      alert('Failed to delete some invoices');
+      toast.error('Failed to delete some invoices');
     }
   };
 
   const handleBatchSubmit = async () => {
     const selectedIds = Array.from(selectedInvoices);
     if (selectedIds.length === 0) {
-      alert('Please select at least one invoice');
+      toast.error('Please select at least one invoice');
       return;
     }
 
@@ -153,12 +156,16 @@ export default function InvoicesPage() {
         }
       });
 
-      alert(`Submitted: ${successCount} succeeded, ${failCount} failed`);
+      if (failCount === 0) {
+        toast.success(`All ${successCount} invoice(s) submitted successfully`);
+      } else {
+        toast.error(`Submitted: ${successCount} succeeded, ${failCount} failed`);
+      }
       setSelectedInvoices(new Set());
       await loadInvoices();
     } catch (error) {
       console.error('Batch submit failed:', error);
-      alert('Batch submission failed');
+      toast.error('Batch submission failed');
     } finally {
       setBatchSubmitting(false);
     }

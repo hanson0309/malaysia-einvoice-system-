@@ -79,7 +79,9 @@ export default function InvoiceDetailPage() {
       if (newStatus !== currentStatus) {
         toast.success(`状态已更新为：${newStatus}`);
       } else {
-        toast.success(`状态无变化，仍为：${currentStatus}`);
+        toast(`状态无变化，仍为：${currentStatus}`, {
+          icon: 'ℹ️',
+        });
       }
 
       await loadInvoice();

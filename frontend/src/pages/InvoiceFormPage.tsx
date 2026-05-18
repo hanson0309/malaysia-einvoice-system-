@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, FileText, X, RefreshCw, Save, FolderOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { invoiceApi, customerApi, productApi, invoiceTemplateApi } from '../lib/api';
 import TemplateModal from '../components/TemplateModal';
 
@@ -209,10 +210,10 @@ export default function InvoiceFormPage() {
 
       await invoiceTemplateApi.create(templatePayload);
       setShowTemplateModal(false);
-      alert('Template saved successfully!');
+      toast.success('Template saved successfully!');
     } catch (error) {
       console.error('Failed to save template:', error);
-      alert('Failed to save template');
+      toast.error('Failed to save template');
     }
   };
 
