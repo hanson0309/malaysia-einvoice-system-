@@ -8,6 +8,8 @@ interface RegisterStep2Props {
     tin_number: string;
     business_activity_code: string;
     sst_registration_no: string;
+    myinvois_client_id: string;
+    myinvois_client_secret: string;
   };
   entity_type: 'individual' | 'company' | '';
   onChange: (field: string, value: string) => void;
@@ -90,6 +92,14 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
     // SST Registration Number validation (optional)
     if (formData.sst_registration_no && formData.sst_registration_no.length > 50) {
       newErrors.sst_registration_no = 'SST registration number must be 50 characters or less';
+    }
+
+    // MyInvois credentials validation (required)
+    if (!formData.myinvois_client_id.trim()) {
+      newErrors.myinvois_client_id = 'MyInvois Client ID is required';
+    }
+    if (!formData.myinvois_client_secret.trim()) {
+      newErrors.myinvois_client_secret = 'MyInvois Client Secret is required';
     }
 
     setErrors(newErrors);
@@ -309,7 +319,54 @@ export default function RegisterStep2({ formData, entity_type, onChange, onNext,
         )}
       </div>
 
-      <div className="form-actions" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="form-group">
+        <label className="form-label" htmlFor="myinvois_client_id">
+          MyInvois Client ID
+        </label>
+        <div className="input-wrapper">
+          <input
+            type="text"
+            id="myinvois_client_id"
+            className="form-input"
+            placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            value={formData.myinvois_client_id}
+            onChange={(e) => handleInputChange('myinvois_client_id', e.target.value)}
+          />
+          <div className="input-underline"></div>
+        </div>
+        <div style={{ fontSize: '0.875rem', color: 'var(--gray)', marginTop: '0.25rem' }}>
+          From MyInvois portal → View and Register ERP
+        </div>
+        {errors.myinvois_client_id && (
+          <div className="field-error">
+            {errors.myinvois_client_id}
+          </div>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label className="form-label" htmlFor="myinvois_client_secret">
+          MyInvois Client Secret
+        </label>
+        <div className="input-wrapper">
+          <input
+            type="password"
+            id="myinvois_client_secret"
+            className="form-input"
+            placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            value={formData.myinvois_client_secret}
+            onChange={(e) => handleInputChange('myinvois_client_secret', e.target.value)}
+          />
+          <div className="input-underline"></div>
+        </div>
+        {errors.myinvois_client_secret && (
+          <div className="field-error">
+            {errors.myinvois_client_secret}
+          </div>
+        )}
+      </div>
+
+      <div className="form-actions">
         <button
           type="button"
           className="btn-secondary"

@@ -7,6 +7,7 @@ import { config } from '../config/env';
 import { ValidationError, UnauthorizedError, DuplicateError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { Tenant, User } from '../models';
+import { irbService } from '../services/irbService';
 
 const router = Router();
 
@@ -26,6 +27,8 @@ const registerSchema = z.object({
   phone: z.string().min(1).max(20),
   password: z.string().min(8).max(100),
   sst_registration_no: z.string().max(50).optional(),
+  myinvois_client_id: z.string().min(1).max(255),
+  myinvois_client_secret: z.string().min(1).max(255),
 });
 
 const loginSchema = z.object({
@@ -67,6 +70,14 @@ router.post('/register', async (req, res, next) => {
       email: data.email,
       phone: data.phone,
     });
+
+    // Save MyInvois credentials (encrypted)
+    tenant.myinvois_client_id = data.myinvois_client_id;
+    tenant.myinvois_client_secret = irbService.encrypt(
+      data.myinvois_client_secret,
+      tenant._id.toString()
+    );
+    await tenant.save();
 
     // Create admin user
     const user = await User.create({

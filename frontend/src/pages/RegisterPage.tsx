@@ -26,6 +26,8 @@ export default function RegisterPage() {
     tin_number: '',
     business_activity_code: '',
     sst_registration_no: '',
+    myinvois_client_id: '',
+    myinvois_client_secret: '',
 
     // Step 3
     phone: '',
@@ -183,7 +185,9 @@ export default function RegisterPage() {
                   company_registration_no: formData.company_registration_no,
                   tin_number: formData.tin_number,
                   business_activity_code: formData.business_activity_code,
-                  sst_registration_no: formData.sst_registration_no
+                  sst_registration_no: formData.sst_registration_no,
+                  myinvois_client_id: formData.myinvois_client_id,
+                  myinvois_client_secret: formData.myinvois_client_secret
                 }}
                 entity_type={formData.entity_type}
                 onChange={handleFieldChange}
