@@ -41,7 +41,7 @@ router.post('/', authenticateJWT, extractTenant, async (req: AuthRequest, res, n
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', undefined, error.issues));
+      next(new ValidationError('Device creation validation failed', undefined, error.issues));
     } else {
       next(error);
     }
@@ -124,7 +124,7 @@ router.post('/pair', async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new ValidationError('Validation failed', undefined, error.issues));
+      next(new ValidationError('Device pairing validation failed', undefined, error.issues));
     } else {
       next(error);
     }

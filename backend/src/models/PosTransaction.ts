@@ -65,7 +65,6 @@ const PosTransactionSchema = new Schema<IPosTransaction>(
 );
 
 PosTransactionSchema.index({ tenant_id: 1, transaction_date: -1 });
-PosTransactionSchema.index({ transaction_id: 1 });
 PosTransactionSchema.index({ invoice_id: 1 });
 
 export const PosTransaction = mongoose.model<IPosTransaction>(

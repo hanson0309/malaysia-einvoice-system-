@@ -55,8 +55,6 @@ const TenantPosSettingsSchema = new Schema<ITenantPosSettings>(
   }
 );
 
-TenantPosSettingsSchema.index({ tenant_id: 1 });
-
 export const TenantPosSettings = mongoose.model<ITenantPosSettings>(
   'TenantPosSettings',
   TenantPosSettingsSchema
