@@ -54,7 +54,7 @@ router.post('/adjust', async (req: AuthRequest, res, next) => {
       after_quantity: afterQuantity,
       reference_id: data.reference_id,
       notes: data.notes,
-      created_by: req.userId,
+      created_by: req.user?.user_id,
     });
 
     res.json({
@@ -109,7 +109,7 @@ router.post('/restock', async (req: AuthRequest, res, next) => {
       after_quantity: afterQuantity,
       reference_id: data.reference_id,
       notes: data.notes,
-      created_by: req.userId,
+      created_by: req.user?.user_id,
     });
 
     res.json({

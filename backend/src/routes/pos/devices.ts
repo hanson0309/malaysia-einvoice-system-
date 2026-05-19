@@ -114,7 +114,7 @@ router.post('/pair', async (req, res, next) => {
       device_token: deviceToken,
       tenant_info: {
         tenant_id: tenant?._id,
-        name: tenant?.name,
+        name: tenant?.company_name,
       },
       settings: settings,
       initial_data: {
