@@ -102,6 +102,9 @@ const invoiceSchema = z.object({
   payment_method: z.enum(['cash', 'bank_transfer', 'card', 'ewallet']).optional(),
   payment_terms: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1),
+  // POS fields
+  source: z.enum(['manual', 'pos']).optional(),
+  pos_transaction_id: z.string().optional(),
 });
 
 router.post('/', async (req: AuthRequest, res, next) => {
@@ -151,6 +154,8 @@ router.post('/', async (req: AuthRequest, res, next) => {
       payment_terms: data.payment_terms,
       status: 'draft',
       items: itemsWithTotals,
+      source: data.source || 'manual',
+      pos_transaction_id: data.pos_transaction_id,
     });
 
     res.status(201).json(invoice);
@@ -199,6 +204,10 @@ router.get('/', async (req: AuthRequest, res, next) => {
 
     if (status) {
       query.status = status;
+    }
+
+    if (req.query.source) {
+      query.source = req.query.source;
     }
 
     const [invoices, total] = await Promise.all([
