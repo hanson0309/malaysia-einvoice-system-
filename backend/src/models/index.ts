@@ -7,3 +7,4 @@ export { InvoiceSending, IInvoiceSending } from './InvoiceSending';
 export { PosDevice, IPosDevice } from './PosDevice';
 export { PosTransaction, IPosTransaction, IPosTransactionItem } from './PosTransaction';
 export { PosInventoryLog, IPosInventoryLog } from './PosInventoryLog';
+export { PosAppointment, IPosAppointment, IPosServiceItem } from './PosAppointment';
