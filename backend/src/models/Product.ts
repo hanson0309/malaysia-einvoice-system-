@@ -9,6 +9,13 @@ export interface IProduct extends Document {
   tax_type: 'SST' | 'E' | 'Z' | 'SR';
   tax_rate: number;
   tax_exemption_reason?: string;
+  // POS fields
+  barcode?: string;
+  stock_quantity?: number;
+  reorder_level?: number;
+  batch_number?: string;
+  expiry_date?: Date;
+  cost_price?: number;
   deleted_at?: Date;
   created_at: Date;
   updated_at: Date;
@@ -29,6 +36,13 @@ const ProductSchema = new Schema<IProduct>(
     },
     tax_rate: { type: Number, required: true },
     tax_exemption_reason: { type: String, maxlength: 200 },
+    // POS fields
+    barcode: { type: String, maxlength: 50 },
+    stock_quantity: { type: Number, default: 0 },
+    reorder_level: { type: Number, default: 0 },
+    batch_number: { type: String, maxlength: 50 },
+    expiry_date: { type: Date },
+    cost_price: { type: Number },
     deleted_at: { type: Date },
   },
   {
@@ -37,5 +51,6 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 ProductSchema.index({ tenant_id: 1, deleted_at: 1 });
+ProductSchema.index({ barcode: 1 }); // Add index for barcode lookup
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);
