@@ -160,4 +160,26 @@ router.delete('/:id', authenticateJWT, extractTenant, async (req: AuthRequest, r
   }
 });
 
+// Permanently delete device (authenticated - only pending/inactive)
+router.delete('/:id/permanent', authenticateJWT, extractTenant, async (req: AuthRequest, res, next) => {
+  try {
+    const device = await PosDevice.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+
+    if (!device) {
+      throw new NotFoundError('Device not found');
+    }
+
+    // Only allow deletion of pending or inactive devices
+    if (device.status === 'active') {
+      throw new ValidationError('Cannot delete active device. Deactivate it first.');
+    }
+
+    await PosDevice.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Device permanently deleted' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

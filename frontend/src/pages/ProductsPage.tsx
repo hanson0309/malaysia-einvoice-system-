@@ -12,6 +12,10 @@ interface Product {
   description?: string;
   price: number;
   classificationCode?: string;
+  barcode?: string;
+  stock_quantity?: number;
+  reorder_level?: number;
+  unit?: string;
 }
 
 export default function ProductsPage() {
@@ -106,6 +110,9 @@ export default function ProductsPage() {
                   <th>Name</th>
                   <th>Description</th>
                   <th>Price</th>
+                  <th>Barcode</th>
+                  <th>Stock</th>
+                  <th>Unit</th>
                   <th>Classification Code</th>
                   <th className="actions-column">Actions</th>
                 </tr>
@@ -127,6 +134,21 @@ export default function ProductsPage() {
                         : '-'}
                     </td>
                     <td className="price-cell">{formatPrice(product.price)}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                      {product.barcode || '-'}
+                    </td>
+                    <td>
+                      {product.stock_quantity !== undefined ? (
+                        <span style={{
+                          color: (product.reorder_level && product.stock_quantity <= product.reorder_level)
+                            ? '#f87171'
+                            : '#34d399'
+                        }}>
+                          {product.stock_quantity}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td>{product.unit || '-'}</td>
                     <td>{product.classificationCode || '-'}</td>
                     <td className="actions-cell">
                       <div className="action-buttons">

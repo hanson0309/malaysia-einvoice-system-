@@ -232,3 +232,161 @@ export const autoConsolidateApi = {
     api.post<AutoConsolidateRunSummary>('/irb/auto-consolidate/run', { dryRun }),
   getProgress: () => api.get<JobProgress>('/irb/auto-consolidate/progress'),
 };
+
+// POS Devices API
+export interface POSDevice {
+  _id: string;
+  device_name: string;
+  device_type: 'tablet' | 'desktop';
+  status: 'pending' | 'active' | 'inactive';
+  pairing_code?: string;
+  pairing_code_expires_at?: string;
+  last_sync?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GeneratePairingCodeRequest {
+  device_name: string;
+  device_type: 'tablet' | 'desktop';
+}
+
+export interface GeneratePairingCodeResponse {
+  device_id: string;
+  device_name: string;
+  pairing_code: string;
+  expires_at: string;
+}
+
+export const posDevicesApi = {
+  getAll: () => api.get<POSDevice[]>('/pos/devices'),
+  generatePairingCode: (data: GeneratePairingCodeRequest) =>
+    api.post<GeneratePairingCodeResponse>('/pos/devices', data),
+  deactivate: (id: string) => api.delete(`/pos/devices/${id}`),
+  permanentDelete: (id: string) => api.delete(`/pos/devices/${id}/permanent`),
+};
+
+// POS Transactions API
+export interface POSTransaction {
+  _id: string;
+  transaction_number: string;
+  date: string;
+  cashier: {
+    name: string;
+    employee_code: string;
+  };
+  total_amount: number;
+  payment_method: string;
+  status: string;
+  invoice_id?: string;
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>;
+  created_at: string;
+}
+
+export const posTransactionsApi = {
+  getAll: (params?: URLSearchParams) => api.get<POSTransaction[]>(`/pos/transactions${params ? '?' + params.toString() : ''}`),
+};
+
+// POS Inventory API
+export interface InventoryLog {
+  _id: string;
+  product_id: string;
+  product_name: string;
+  transaction_type: 'purchase' | 'sale' | 'adjustment' | 'stocktake';
+  quantity_change: number;
+  quantity_before: number;
+  quantity_after: number;
+  reference_number?: string;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+}
+
+export const posInventoryApi = {
+  getLogs: (params?: URLSearchParams) => api.get<InventoryLog[]>(`/pos/inventory/logs${params ? '?' + params.toString() : ''}`),
+  adjust: (data: { product_id: string; quantity_change: number; notes?: string }) =>
+    api.post('/pos/inventory/adjust', data),
+  restock: (data: { product_id: string; quantity: number; cost_per_unit: number; supplier?: string; notes?: string }) =>
+    api.post('/pos/inventory/restock', data),
+};
+
+// POS Appointments API
+export interface ServiceItem {
+  description: string;
+  price: number;
+}
+
+export interface POSAppointment {
+  _id: string;
+  customer_id: {
+    _id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+  };
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  service_type: string;
+  service_items: ServiceItem[];
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+  created_at: string;
+}
+
+export const posAppointmentsApi = {
+  getAll: (params?: URLSearchParams) => api.get<POSAppointment[]>(`/pos/appointments${params ? '?' + params.toString() : ''}`),
+  create: (data: any) => api.post('/pos/appointments', data),
+  update: (id: string, data: any) => api.put(`/pos/appointments/${id}`, data),
+  cancel: (id: string) => api.delete(`/pos/appointments/${id}`),
+};
+
+// POS Employees API
+export interface POSEmployee {
+  _id: string;
+  employee_code: string;
+  email: string;
+  role: string;
+  active_status: 'active' | 'inactive';
+  created_at: string;
+}
+
+export const posEmployeesApi = {
+  getAll: (params?: URLSearchParams) => api.get<POSEmployee[]>(`/pos/employees${params ? '?' + params.toString() : ''}`),
+  pinLogin: (data: { employee_code: string; pin: string }) => api.post('/pos/employees/pin-login', data),
+};
+
+// POS Settings API
+export interface POSSettings {
+  _id?: string;
+  tenant_id?: string;
+  modules: {
+    appointment: boolean;
+    inventory: boolean;
+    multi_cashier: boolean;
+    customer_management: boolean;
+  };
+  business_type: 'retail' | 'service' | 'both';
+  invoice_settings: {
+    auto_create_on_payment: boolean;
+    default_invoice_type: '01' | '02';
+    require_customer_for_invoice: boolean;
+  };
+  hardware: {
+    receipt_printer_enabled: boolean;
+    barcode_scanner_enabled: boolean;
+    cash_drawer_enabled: boolean;
+    label_printer_enabled: boolean;
+  };
+}
+
+export const posSettingsApi = {
+  get: () => api.get<POSSettings>('/pos/settings'),
+  update: (data: Partial<POSSettings>) => api.put<POSSettings>('/pos/settings', data),
+};

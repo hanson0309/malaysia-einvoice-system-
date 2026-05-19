@@ -15,6 +15,12 @@ import InvoiceFormPage from './pages/InvoiceFormPage';
 import InvoiceDetailPage from './pages/InvoiceDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import POSDevicesPage from './pages/POSDevicesPage';
+import POSTransactionsPage from './pages/POSTransactionsPage';
+import POSInventoryPage from './pages/POSInventoryPage';
+import POSAppointmentsPage from './pages/POSAppointmentsPage';
+import POSEmployeesPage from './pages/POSEmployeesPage';
+import POSSettingsPage from './pages/POSSettingsPage';
 
 function App() {
   return (
@@ -43,6 +49,12 @@ function App() {
             <Route path="invoices" element={<InvoicesPage />} />
             <Route path="invoices/new" element={<InvoiceFormPage />} />
             <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+            <Route path="pos-devices" element={<POSDevicesPage />} />
+            <Route path="pos-transactions" element={<POSTransactionsPage />} />
+            <Route path="pos-inventory" element={<POSInventoryPage />} />
+            <Route path="pos-appointments" element={<POSAppointmentsPage />} />
+            <Route path="pos-employees" element={<POSEmployeesPage />} />
+            <Route path="pos-settings" element={<POSSettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

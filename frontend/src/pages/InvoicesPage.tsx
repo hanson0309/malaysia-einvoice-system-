@@ -20,6 +20,7 @@ interface Invoice {
   date: string;
   total: number;
   status: 'draft' | 'submitted' | 'validated' | 'rejected';
+  source?: 'manual' | 'pos';
 }
 
 export default function InvoicesPage() {
@@ -27,6 +28,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -88,7 +90,8 @@ export default function InvoicesPage() {
         customerName: inv.customerName || inv.customer?.name || 'Unknown',
         date: inv.issue_date,
         total: inv.total_amount,
-        status: mapStatus(inv.status)
+        status: mapStatus(inv.status),
+        source: inv.source || 'manual'
       }));
 
       console.log('Mapped invoices:', mappedInvoices);
@@ -213,8 +216,9 @@ export default function InvoicesPage() {
       invoice.customerName.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    const matchesSource = sourceFilter === 'all' || invoice.source === sourceFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   const getStatusColor = (status: string) => {
@@ -335,6 +339,30 @@ export default function InvoicesPage() {
             <option value="submitted">Submitted</option>
             <option value="validated">Validated</option>
             <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        {/* Source Filter */}
+        <div style={{ position: 'relative' }}>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            style={{
+              padding: '0.75rem 1rem',
+              background: 'rgba(30, 41, 59, 0.8)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '0.75rem',
+              color: '#f1f5f9',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              outline: 'none',
+              minWidth: '150px'
+            }}
+          >
+            <option value="all">All Sources</option>
+            <option value="manual">Manual</option>
+            <option value="pos">POS</option>
           </select>
         </div>
 
@@ -654,6 +682,18 @@ export default function InvoicesPage() {
                   </th>
                   <th style={{
                     padding: '1rem 1.5rem',
+                    textAlign: 'left',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    Source
+                  </th>
+                  <th style={{
+                    padding: '1rem 1.5rem',
                     textAlign: 'right',
                     fontSize: '0.75rem',
                     fontWeight: 600,
@@ -752,6 +792,27 @@ export default function InvoicesPage() {
                           border: `1px solid ${statusColor.border}`
                         }}>
                           {invoice.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.5rem' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '0.375rem 0.75rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          background: invoice.source === 'pos'
+                            ? 'rgba(139, 92, 246, 0.2)'
+                            : 'rgba(148, 163, 184, 0.2)',
+                          color: invoice.source === 'pos' ? '#a78bfa' : '#94a3b8',
+                          border: invoice.source === 'pos'
+                            ? '1px solid rgba(139, 92, 246, 0.3)'
+                            : '1px solid rgba(148, 163, 184, 0.3)'
+                        }}>
+                          {invoice.source || 'manual'}
                         </span>
                       </td>
                       <td style={{ padding: '1rem 1.5rem' }}>

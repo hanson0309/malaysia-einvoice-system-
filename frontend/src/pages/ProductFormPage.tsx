@@ -14,6 +14,10 @@ export default function ProductFormPage() {
     description: '',
     price: '',
     classificationCode: '',
+    barcode: '',
+    stock_quantity: '',
+    reorder_level: '',
+    unit: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +35,10 @@ export default function ProductFormPage() {
       setFormData({
         ...response.data,
         price: response.data.price.toString(),
+        barcode: response.data.barcode || '',
+        stock_quantity: response.data.stock_quantity?.toString() || '',
+        reorder_level: response.data.reorder_level?.toString() || '',
+        unit: response.data.unit || '',
       });
     } catch (error) {
       console.error('Failed to load product:', error);
@@ -78,6 +86,8 @@ export default function ProductFormPage() {
       const payload = {
         ...formData,
         price: Number(formData.price),
+        stock_quantity: formData.stock_quantity ? Number(formData.stock_quantity) : undefined,
+        reorder_level: formData.reorder_level ? Number(formData.reorder_level) : undefined,
       };
 
       if (isEdit && id) {
@@ -209,6 +219,88 @@ export default function ProductFormPage() {
               placeholder="001"
             />
             {errors.classificationCode && <p className="form-field-error">{errors.classificationCode}</p>}
+          </div>
+
+          {/* POS Fields Section */}
+          <div style={{
+            marginTop: '2rem',
+            paddingTop: '2rem',
+            borderTop: '1px solid rgba(139, 92, 246, 0.2)'
+          }}>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              color: '#8b5cf6',
+              marginBottom: '1rem'
+            }}>
+              POS & Inventory Settings
+            </h3>
+
+            <div className="form-field">
+              <label htmlFor="barcode" className="form-field-label">
+                Barcode
+              </label>
+              <input
+                type="text"
+                id="barcode"
+                name="barcode"
+                value={formData.barcode}
+                onChange={handleChange}
+                className="form-field-input"
+                placeholder="1234567890123"
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div className="form-field">
+                <label htmlFor="stock_quantity" className="form-field-label">
+                  Stock Quantity
+                </label>
+                <input
+                  type="number"
+                  id="stock_quantity"
+                  name="stock_quantity"
+                  value={formData.stock_quantity}
+                  onChange={handleChange}
+                  className="form-field-input"
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="reorder_level" className="form-field-label">
+                  Reorder Level
+                </label>
+                <input
+                  type="number"
+                  id="reorder_level"
+                  name="reorder_level"
+                  value={formData.reorder_level}
+                  onChange={handleChange}
+                  className="form-field-input"
+                  placeholder="10"
+                  min="0"
+                  step="1"
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="unit" className="form-field-label">
+                  Unit
+                </label>
+                <input
+                  type="text"
+                  id="unit"
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleChange}
+                  className="form-field-input"
+                  placeholder="pcs, kg, box, etc."
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-actions">

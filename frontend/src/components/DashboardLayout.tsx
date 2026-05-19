@@ -13,7 +13,13 @@ import {
   X,
   User,
   ChevronDown,
-  Users
+  Users,
+  Smartphone,
+  Receipt,
+  PackageOpen,
+  Calendar,
+  UserCog,
+  Sliders
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -87,6 +93,12 @@ export default function DashboardLayout() {
     { name: 'Products', href: '/dashboard/products', icon: Package },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
+    { name: 'POS Devices', href: '/dashboard/pos-devices', icon: Smartphone, section: 'POS Management' },
+    { name: 'POS Transactions', href: '/dashboard/pos-transactions', icon: Receipt, section: 'POS Management' },
+    { name: 'POS Inventory', href: '/dashboard/pos-inventory', icon: PackageOpen, section: 'POS Management' },
+    { name: 'POS Appointments', href: '/dashboard/pos-appointments', icon: Calendar, section: 'POS Management' },
+    { name: 'POS Employees', href: '/dashboard/pos-employees', icon: UserCog, section: 'POS Management' },
+    { name: 'POS Settings', href: '/dashboard/pos-settings', icon: Sliders, section: 'POS Management' },
     { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
 
@@ -150,62 +162,81 @@ export default function DashboardLayout() {
               {navigation.map((item, index) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
+                const showSectionHeader = item.section && (index === 0 || navigation[index - 1].section !== item.section);
 
                 return (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    <Link
-                      to={item.href}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
+                  <div key={item.name}>
+                    {showSectionHeader && (
+                      <div style={{
                         padding: '0.75rem 1rem',
-                        borderRadius: '0.75rem',
-                        transition: 'all 0.3s',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        textDecoration: 'none',
-                        background: active ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)' : 'transparent',
-                        color: active ? '#8b5cf6' : '#64748b',
-                        fontWeight: active ? 600 : 500
-                      }}
+                        marginTop: index > 0 ? '1rem' : '0',
+                        marginBottom: '0.5rem',
+                      }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: '#64748b',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                        }}>
+                          {item.section}
+                        </span>
+                      </div>
+                    )}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
                     >
-                      {active && (
-                        <motion.div
-                          layoutId="activeNav"
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            borderRadius: '0.75rem',
-                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-                            border: '1px solid rgba(139, 92, 246, 0.3)'
-                          }}
-                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
-                      )}
-                      <Icon style={{ width: '20px', height: '20px', marginRight: '0.75rem', position: 'relative', zIndex: 10 }} />
-                      <span style={{ position: 'relative', zIndex: 10 }}>{item.name}</span>
-                      {active && (
-                        <motion.div
-                          style={{
-                            marginLeft: 'auto',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: '#8b5cf6',
-                            position: 'relative',
-                            zIndex: 10
-                          }}
-                          animate={{ scale: [1, 1.3, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                      )}
-                    </Link>
-                  </motion.div>
+                      <Link
+                        to={item.href}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.75rem',
+                          transition: 'all 0.3s',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          textDecoration: 'none',
+                          background: active ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)' : 'transparent',
+                          color: active ? '#8b5cf6' : '#64748b',
+                          fontWeight: active ? 600 : 500
+                        }}
+                      >
+                        {active && (
+                          <motion.div
+                            layoutId="activeNav"
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              borderRadius: '0.75rem',
+                              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
+                              border: '1px solid rgba(139, 92, 246, 0.3)'
+                            }}
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          />
+                        )}
+                        <Icon style={{ width: '20px', height: '20px', marginRight: '0.75rem', position: 'relative', zIndex: 10 }} />
+                        <span style={{ position: 'relative', zIndex: 10 }}>{item.name}</span>
+                        {active && (
+                          <motion.div
+                            style={{
+                              marginLeft: 'auto',
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: '#8b5cf6',
+                              position: 'relative',
+                              zIndex: 10
+                            }}
+                            animate={{ scale: [1, 1.3, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        )}
+                      </Link>
+                    </motion.div>
+                  </div>
                 );
               })}
             </div>
