@@ -43,6 +43,9 @@ export interface IInvoice extends Document {
   next_retry_at?: Date;
   pdf_url?: string;
   items: IInvoiceItem[];
+  // POS source tracking
+  source?: 'manual' | 'pos';
+  pos_transaction_id?: string;
   deleted_at?: Date;
   created_at: Date;
   updated_at: Date;
@@ -108,6 +111,9 @@ const InvoiceSchema = new Schema<IInvoice>(
     next_retry_at: { type: Date },
     pdf_url: { type: String, maxlength: 500 },
     items: [InvoiceItemSchema],
+    // POS source tracking
+    source: { type: String, enum: ['manual', 'pos'], default: 'manual' },
+    pos_transaction_id: { type: String, maxlength: 100 },
     deleted_at: { type: Date },
   },
   {
@@ -119,5 +125,6 @@ InvoiceSchema.index({ tenant_id: 1, invoice_number: 1 }, { unique: true });
 InvoiceSchema.index({ tenant_id: 1, status: 1 });
 InvoiceSchema.index({ lhdn_submission_uid: 1 });
 InvoiceSchema.index({ next_retry_at: 1 });
+InvoiceSchema.index({ pos_transaction_id: 1 });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema);
