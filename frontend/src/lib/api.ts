@@ -101,7 +101,8 @@ export interface SendingHistoryItem {
 // Invoice API
 // Note: invoiceApi.submit() is the legacy MyInvois endpoint (being replaced by IRB system)
 export const invoiceApi = {
-  getAll: () => api.get('/invoices'),
+  getAll: (params?: { limit?: number; page?: number; status?: string; source?: string }) =>
+    api.get('/invoices', { params: { limit: 1000, ...params } }),
   getById: (id: string) => api.get(`/invoices/${id}`),
   getNextNumber: () => api.get<{ invoice_number: string }>('/invoices/next-number'),
   create: (data: any) => api.post('/invoices', data),
@@ -389,4 +390,71 @@ export interface POSSettings {
 export const posSettingsApi = {
   get: () => api.get<POSSettings>('/pos/settings'),
   update: (data: Partial<POSSettings>) => api.put<POSSettings>('/pos/settings', data),
+};
+
+// SQL Connection API
+export interface SqlConnectionConfig {
+  _id?: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  has_password?: boolean;
+  invoice_query: string;
+  invoice_lines_query?: string;
+  column_mapping: {
+    invoice: Record<string, string>;
+    customer: Record<string, string>;
+    lines: Record<string, string>;
+  };
+  auto_sync_enabled: boolean;
+  auto_sync_interval_minutes: number;
+  is_active: boolean;
+  last_sync_at?: string;
+  last_sync_status?: string;
+  last_sync_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SqlSyncResult {
+  success: boolean;
+  imported: number;
+  skipped: number;
+  errors: number;
+  message: string;
+}
+
+export interface SqlDetectResult {
+  success: boolean;
+  error?: string;
+  tables: string[];
+  table_columns: Record<string, string[]>;
+  detected: {
+    invoice_table: string | null;
+    suggested_query: string;
+    column_mapping: {
+      invoice: Record<string, string>;
+      customer: Record<string, string>;
+      lines: Record<string, string>;
+    };
+  };
+}
+
+export const sqlConnectionApi = {
+  get: () => api.get<{ data: SqlConnectionConfig | null }>('/sql-connection'),
+  save: (data: any) => api.post<{ data: SqlConnectionConfig; message: string }>('/sql-connection', data),
+  delete: () => api.delete<{ message: string }>('/sql-connection'),
+  testNew: (data: { host: string; port: number; database: string; username: string; password: string }) =>
+    api.post<{ success: boolean; message: string }>('/sql-connection/test', data),
+  testSaved: () =>
+    api.post<{ success: boolean; message: string }>('/sql-connection/test-saved'),
+  detect: (data: { host: string; port: number; database: string; username: string; password: string }) =>
+    api.post<SqlDetectResult>('/sql-connection/detect', data),
+  preview: (limit = 5) =>
+    api.get<{ success: boolean; data: any[]; count: number; message?: string }>(`/sql-connection/preview?limit=${limit}`),
+  sync: (full = false) =>
+    api.post<SqlSyncResult>('/sql-connection/sync', { full }),
+  resetSync: () =>
+    api.post<{ message: string }>('/sql-connection/reset-sync'),
 };

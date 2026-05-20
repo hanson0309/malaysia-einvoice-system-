@@ -18,6 +18,8 @@ export const config = {
   // CURRENT month. When false (production), it only runs on day 1-7,
   // is idempotent per calendar month, and scans the PREVIOUS month.
   AUTO_CONSOLIDATE_DEBUG: String(process.env.AUTO_CONSOLIDATE_DEBUG || '').toLowerCase() === 'true',
+  // SQL_DEBUG=true → SQL auto-sync runs every 1 min (testing). false → monthly day 1-7 only.
+  SQL_DEBUG: String(process.env.SQL_DEBUG || '').toLowerCase() === 'true',
 };
 
 // Validate required env vars

@@ -6,6 +6,7 @@ import invoiceRoutes from './invoices';
 import irbRoutes from './irb';
 import invoiceTemplateRoutes from './invoiceTemplates';
 import posRouter from './pos';
+import sqlConnectionRoutes from './sqlConnection';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/invoices', invoiceRoutes);
 router.use('/irb', irbRoutes);
 router.use('/invoice-templates', invoiceTemplateRoutes);
 router.use('/pos', posRouter);
+router.use('/sql-connection', sqlConnectionRoutes);
 
 export default router;

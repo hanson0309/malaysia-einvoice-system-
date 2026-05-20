@@ -19,7 +19,8 @@ import {
   PackageOpen,
   Calendar,
   UserCog,
-  Sliders
+  Sliders,
+  Database
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -92,6 +93,7 @@ export default function DashboardLayout() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Products', href: '/dashboard/products', icon: Package },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
+    { name: 'SQL Connection', href: '/dashboard/sql-connection', icon: Database },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
     { name: 'POS Devices', href: '/dashboard/pos-devices', icon: Smartphone, section: 'POS Management' },
     { name: 'POS Transactions', href: '/dashboard/pos-transactions', icon: Receipt, section: 'POS Management' },

@@ -9,3 +9,4 @@ export { PosTransaction, IPosTransaction, IPosTransactionItem } from './PosTrans
 export { PosInventoryLog, IPosInventoryLog } from './PosInventoryLog';
 export { PosAppointment, IPosAppointment, IPosServiceItem } from './PosAppointment';
 export { TenantPosSettings, ITenantPosSettings } from './TenantPosSettings';
+export { TenantSqlConnection, ITenantSqlConnection, ISqlColumnMapping } from './TenantSqlConnection';

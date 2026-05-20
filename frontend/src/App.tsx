@@ -21,6 +21,7 @@ import POSInventoryPage from './pages/POSInventoryPage';
 import POSAppointmentsPage from './pages/POSAppointmentsPage';
 import POSEmployeesPage from './pages/POSEmployeesPage';
 import POSSettingsPage from './pages/POSSettingsPage';
+import SqlConnectionPage from './pages/SqlConnectionPage';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
             <Route path="pos-employees" element={<POSEmployeesPage />} />
             <Route path="pos-settings" element={<POSSettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="sql-connection" element={<SqlConnectionPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

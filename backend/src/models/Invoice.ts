@@ -44,7 +44,7 @@ export interface IInvoice extends Document {
   pdf_url?: string;
   items: IInvoiceItem[];
   // POS source tracking
-  source?: 'manual' | 'pos';
+  source?: 'manual' | 'pos' | 'sql';
   pos_transaction_id?: string;
   deleted_at?: Date;
   created_at: Date;
@@ -112,7 +112,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     pdf_url: { type: String, maxlength: 500 },
     items: [InvoiceItemSchema],
     // POS source tracking
-    source: { type: String, enum: ['manual', 'pos'], default: 'manual' },
+    source: { type: String, enum: ['manual', 'pos', 'sql'], default: 'manual' },
     pos_transaction_id: { type: String, maxlength: 100 },
     deleted_at: { type: Date },
   },

@@ -27,6 +27,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.1",
+    "mysql2": "^3.22.3",
     "nodemailer": "^8.0.7",
     "pdfkit": "^0.18.0",
     "qrcode": "^1.5.4",

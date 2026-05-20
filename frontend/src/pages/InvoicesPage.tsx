@@ -1,17 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Trash2, Search, FileText, Filter, CheckSquare, Square, Send, Download, Loader2, CheckCircle2, X } from 'lucide-react';
+import { Plus, Eye, Trash2, Search, FileText, Filter, CheckSquare, Square, Send, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, irbApi, autoConsolidateApi } from '../lib/api';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
-
-interface BatchProgress {
-  total: number;
-  processed: number;
-  succeeded: number;
-  failed: number;
-}
 
 interface Invoice {
   id: string;
@@ -32,7 +25,7 @@ export default function InvoicesPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [batchSubmitting, setBatchSubmitting] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
+
   const batchPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Poll server-side per-invoice progress while batch submit is running.
@@ -45,14 +38,6 @@ export default function InvoicesPage() {
     const poll = async () => {
       try {
         const { data } = await autoConsolidateApi.getProgress();
-        if ((data.total ?? 0) > 0) {
-          setBatchProgress({
-            total: data.total ?? 0,
-            processed: data.processed ?? 0,
-            succeeded: data.succeeded ?? 0,
-            failed: data.failed ?? 0,
-          });
-        }
         // Job finished when server says running:false and all invoices accounted for
         if (!data.running && (data.total ?? 0) > 0) {
           setBatchSubmitting(false);
@@ -183,9 +168,6 @@ export default function InvoicesPage() {
     if (!confirm(`Submit ${selectedIds.length} invoice(s) to IRB?`)) return;
 
     setBatchSubmitting(true);
-    // Show bar immediately with 0 progress while server starts
-    setBatchProgress({ total: selectedIds.length, processed: 0, succeeded: 0, failed: 0 });
-
     try {
       // POST returns immediately ({queued:true}); polling detects completion and stops batchSubmitting
       await irbApi.submitBatch(selectedIds);
@@ -725,27 +707,29 @@ export default function InvoicesPage() {
                         padding: '1rem 1.5rem',
                         textAlign: 'center'
                       }}>
-                        <motion.button
-                          onClick={() => toggleSelectInvoice(invoice.id)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: selectedInvoices.has(invoice.id) ? '#8b5cf6' : '#94a3b8'
-                          }}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          {selectedInvoices.has(invoice.id) ? (
-                            <CheckSquare style={{ width: '18px', height: '18px' }} />
-                          ) : (
-                            <Square style={{ width: '18px', height: '18px' }} />
-                          )}
-                        </motion.button>
+                        {['submitted', 'validated'].includes(invoice.status) ? null : (
+                          <motion.button
+                            onClick={() => toggleSelectInvoice(invoice.id)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: selectedInvoices.has(invoice.id) ? '#8b5cf6' : '#94a3b8'
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            {selectedInvoices.has(invoice.id) ? (
+                              <CheckSquare style={{ width: '18px', height: '18px' }} />
+                            ) : (
+                              <Square style={{ width: '18px', height: '18px' }} />
+                            )}
+                          </motion.button>
+                        )}
                       </td>
                       <td style={{
                         padding: '1rem 1.5rem',
@@ -896,17 +880,6 @@ export default function InvoicesPage() {
         </motion.div>
       )}
 
-      {/* Batch Submission Progress Bar */}
-      <AnimatePresence>
-        {batchProgress && (
-          <ManualBatchProgressBar
-            progress={batchProgress}
-            submitting={batchSubmitting}
-            onDismiss={() => setBatchProgress(null)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Invoice Detail Modal */}
       <AnimatePresence>
         {selectedInvoiceId && (
@@ -921,91 +894,3 @@ export default function InvoicesPage() {
   );
 }
 
-// ── ManualBatchProgressBar ────────────────────────────────────────────────────
-
-interface ManualBatchProgressBarProps {
-  progress: BatchProgress;
-  submitting: boolean;
-  onDismiss: () => void;
-}
-
-function ManualBatchProgressBar({ progress, submitting, onDismiss }: ManualBatchProgressBarProps) {
-  const { total, processed, succeeded, failed } = progress;
-  const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
-  const isComplete = !submitting && processed >= total;
-
-  const barColor = isComplete
-    ? failed > 0
-      ? 'linear-gradient(90deg, #22c55e, #f97316)'
-      : 'linear-gradient(90deg, #22c55e, #16a34a)'
-    : 'linear-gradient(90deg, #3b82f6, #8b5cf6)';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      transition={{ duration: 0.25 }}
-      style={{
-        marginTop: '1.5rem',
-        padding: '1rem 1.25rem',
-        background: 'rgba(15, 23, 42, 0.75)',
-        border: '1px solid rgba(148,163,184,0.2)',
-        borderRadius: '0.75rem',
-        backdropFilter: 'blur(10px)',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {submitting ? (
-            <Loader2 size={15} style={{ color: '#60a5fa', animation: 'spin 1s linear infinite' }} />
-          ) : (
-            <CheckCircle2 size={15} style={{ color: failed > 0 ? '#fb923c' : '#4ade80' }} />
-          )}
-          <span style={{ color: '#f1f5f9', fontSize: '0.85rem', fontWeight: 600 }}>
-            {submitting ? 'Submitting to MyInvois…' : 'Submission complete'}
-          </span>
-        </div>
-        {isComplete && (
-          <button
-            onClick={onDismiss}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 2 }}
-            title="Dismiss"
-          >
-            <X size={14} />
-          </button>
-        )}
-      </div>
-
-      {/* Bar */}
-      <div style={{ position: 'relative', height: '6px', background: 'rgba(148,163,184,0.15)', borderRadius: '9999px', overflow: 'hidden', marginBottom: '0.6rem' }}>
-        <motion.div
-          initial={{ width: '0%' }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          style={{ position: 'absolute', top: 0, left: 0, height: '100%', background: barColor, borderRadius: '9999px' }}
-        />
-        {submitting && (
-          <motion.div
-            animate={{ x: ['-100%', '300%'] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ position: 'absolute', top: 0, left: 0, width: '40%', height: '100%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)' }}
-          />
-        )}
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.78rem', color: '#94a3b8', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '0.88rem' }}>
-          <strong style={{ color: '#f1f5f9', fontSize: '1rem' }}>{processed}</strong>
-          <span style={{ color: '#64748b' }}>/{total}</span>
-          {' '}invoices
-        </span>
-        {succeeded > 0 && <span style={{ color: '#86efac' }}>✓ {succeeded} ok</span>}
-        {failed > 0 && <span style={{ color: '#fca5a5' }}>✗ {failed} failed</span>}
-        <span style={{ marginLeft: 'auto', color: '#64748b' }}>{pct}%</span>
-      </div>
-    </motion.div>
-  );
-}
