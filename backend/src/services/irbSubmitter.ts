@@ -86,7 +86,7 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
         ID: [{ _: invoice.invoice_number }],
         IssueDate: [{ _: issueDate }],
         IssueTime: [{ _: issueTime }],
-        InvoiceTypeCode: [{ _: '01', listVersionID: '1.0' }],
+        InvoiceTypeCode: [{ _: invoice.invoice_type || '01', listVersionID: '1.0' }],
         DocumentCurrencyCode: [{ _: 'MYR' }],
         Signature: [
           {
@@ -229,7 +229,7 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
               CommodityClassification: [
                 {
                   ItemClassificationCode: [
-                    { _: invoice.classification_code || '004', listID: 'CLASS' },
+                    { _: item.classificationCode || '004', listID: 'CLASS' },
                   ],
                 },
               ],

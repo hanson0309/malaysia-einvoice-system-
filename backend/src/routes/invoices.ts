@@ -89,6 +89,7 @@ const invoiceItemSchema = z.object({
   tax_type: z.enum(['SST', 'E', 'Z', 'SR']),
   tax_rate: z.number().min(0).max(100),
   tax_exemption_reason: z.string().max(200).optional(),
+  classificationCode: z.string().max(50).optional(),
 });
 
 const invoiceSchema = z.object({
@@ -160,6 +161,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
         tax_rate: item.tax_rate,
         tax_amount: item_tax,
         tax_exemption_reason: item.tax_exemption_reason,
+        classificationCode: item.classificationCode,
         line_total,
       };
     });
