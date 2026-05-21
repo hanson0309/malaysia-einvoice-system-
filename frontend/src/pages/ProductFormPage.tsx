@@ -32,13 +32,17 @@ export default function ProductFormPage() {
   const loadProduct = async (productId: string) => {
     try {
       const response = await productApi.getById(productId);
+      const product = response.data;
+
       setFormData({
-        ...response.data,
-        price: response.data.price.toString(),
-        barcode: response.data.barcode || '',
-        stock_quantity: response.data.stock_quantity?.toString() || '',
-        reorder_level: response.data.reorder_level?.toString() || '',
-        unit: response.data.unit || '',
+        name: product.name || '',
+        description: product.description || '',
+        price: (product.unit_price || product.price || 0).toString(),
+        classificationCode: product.classificationCode || '',
+        barcode: product.barcode || '',
+        stock_quantity: product.stock_quantity?.toString() || '',
+        reorder_level: product.reorder_level?.toString() || '',
+        unit: product.unit || '',
       });
     } catch (error) {
       console.error('Failed to load product:', error);

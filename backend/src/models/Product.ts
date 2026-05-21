@@ -9,6 +9,7 @@ export interface IProduct extends Document {
   tax_type: 'SST' | 'E' | 'Z' | 'SR';
   tax_rate: number;
   tax_exemption_reason?: string;
+  classificationCode?: string;
   // POS fields
   barcode?: string;
   stock_quantity?: number;
@@ -16,6 +17,8 @@ export interface IProduct extends Document {
   batch_number?: string;
   expiry_date?: Date;
   cost_price?: number;
+  image_url?: string;
+  unit?: string;
   deleted_at?: Date;
   created_at: Date;
   updated_at: Date;
@@ -36,6 +39,8 @@ const ProductSchema = new Schema<IProduct>(
     },
     tax_rate: { type: Number, required: true },
     tax_exemption_reason: { type: String, maxlength: 200 },
+    classificationCode: { type: String, maxlength: 50 },
+    unit: { type: String, maxlength: 20 },
     // POS fields
     barcode: { type: String, maxlength: 50 },
     stock_quantity: { type: Number, default: 0 },
@@ -43,6 +48,7 @@ const ProductSchema = new Schema<IProduct>(
     batch_number: { type: String, maxlength: 50 },
     expiry_date: { type: Date },
     cost_price: { type: Number },
+    image_url: { type: String, maxlength: 500 },
     deleted_at: { type: Date },
   },
   {
@@ -51,6 +57,8 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 ProductSchema.index({ tenant_id: 1, deleted_at: 1 });
-ProductSchema.index({ barcode: 1 }); // Add index for barcode lookup
+ProductSchema.index({ tenant_id: 1, barcode: 1 }); // Compound index for tenant-scoped barcode lookup
+ProductSchema.index({ tenant_id: 1, updated_at: -1 }); // For incremental sync
+ProductSchema.index({ tenant_id: 1, name: 'text', description: 'text' }); // Full-text search
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);

@@ -13,34 +13,50 @@ router.use(extractTenant);
 const productSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
-  sku: z.string().max(100).optional(),
-  unit_price: z.number().positive(),
-  tax_type: z.enum(['SST', 'E', 'Z', 'SR']),
-  tax_rate: z.number().min(0).max(100),
+  price: z.number().positive().optional(), // Frontend field name
+  unit_price: z.number().positive().optional(), // Backend field name
+  classificationCode: z.string().optional(), // Frontend field name
+  tax_type: z.enum(['SST', 'E', 'Z', 'SR']).optional(),
+  tax_rate: z.number().min(0).max(100).optional(),
   tax_exemption_reason: z.string().max(200).optional(),
+  barcode: z.string().max(50).optional(),
+  stock_quantity: z.number().min(0).optional(),
+  reorder_level: z.number().min(0).optional(),
+  unit: z.string().max(20).optional(),
 }).refine(
   (data) => {
-    if (data.tax_rate === 0 && !data.tax_exemption_reason) {
-      return false;
-    }
-    return true;
+    // Accept either price or unit_price
+    const hasPrice = data.price !== undefined || data.unit_price !== undefined;
+    return hasPrice;
   },
-  { message: 'Tax exemption reason required when tax rate is 0' }
+  { message: 'Price is required' }
 );
 
 router.post('/', async (req: AuthRequest, res, next) => {
   try {
     const data = productSchema.parse(req.body);
 
+    // Map frontend fields to backend fields
+    const unitPrice = data.unit_price || data.price;
+    const classificationCode = data.classificationCode || '001'; // Default classification
+
+    // Default tax settings (SST 6%)
+    const taxType = data.tax_type || 'SST';
+    const taxRate = data.tax_rate !== undefined ? data.tax_rate : 6;
+
     const product = await Product.create({
       tenant_id: req.tenantId,
       name: data.name,
       description: data.description,
-      sku: data.sku,
-      unit_price: data.unit_price,
-      tax_type: data.tax_type,
-      tax_rate: data.tax_rate,
+      unit_price: unitPrice,
+      tax_type: taxType,
+      tax_rate: taxRate,
       tax_exemption_reason: data.tax_exemption_reason,
+      classificationCode: classificationCode,
+      barcode: data.barcode,
+      stock_quantity: data.stock_quantity || 0,
+      reorder_level: data.reorder_level || 0,
+      unit: data.unit,
     });
 
     res.status(201).json(product);
@@ -108,21 +124,34 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
   try {
     const data = productSchema.parse(req.body);
 
+    // Map frontend fields to backend fields
+    const unitPrice = data.unit_price || data.price;
+    const taxType = data.tax_type || 'SST';
+    const taxRate = data.tax_rate !== undefined ? data.tax_rate : 6;
+
+    const updateData: any = {
+      name: data.name,
+      description: data.description,
+      unit_price: unitPrice,
+      tax_type: taxType,
+      tax_rate: taxRate,
+      tax_exemption_reason: data.tax_exemption_reason,
+      classificationCode: data.classificationCode,
+    };
+
+    // Add optional fields if provided
+    if (data.barcode !== undefined) updateData.barcode = data.barcode;
+    if (data.stock_quantity !== undefined) updateData.stock_quantity = data.stock_quantity;
+    if (data.reorder_level !== undefined) updateData.reorder_level = data.reorder_level;
+    if (data.unit !== undefined) updateData.unit = data.unit;
+
     const product = await Product.findOneAndUpdate(
       {
         _id: req.params.id,
         tenant_id: req.tenantId,
         deleted_at: null,
       },
-      {
-        name: data.name,
-        description: data.description,
-        sku: data.sku,
-        unit_price: data.unit_price,
-        tax_type: data.tax_type,
-        tax_rate: data.tax_rate,
-        tax_exemption_reason: data.tax_exemption_reason,
-      },
+      updateData,
       { new: true }
     );
 
