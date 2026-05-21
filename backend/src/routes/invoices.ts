@@ -94,7 +94,7 @@ const invoiceItemSchema = z.object({
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1).max(50),
   invoice_type: z.enum(['01', '02', '03', '04']),
-  customer_id: z.string(),
+  customer_id: z.string().optional(),
   issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   currency: z.string().length(3).default('MYR'),
@@ -105,12 +105,26 @@ const invoiceSchema = z.object({
   // POS fields
   source: z.enum(['manual', 'pos']).optional(),
   pos_transaction_id: z.string().optional(),
+}).refine((data) => {
+  // B2B invoices (type '01') require customer_id
+  if (data.invoice_type === '01') {
+    return !!data.customer_id;
+  }
+  // B2C invoices (type '02') don't require customer_id
+  return true;
+}, {
+  message: "customer_id is required for B2B invoices (invoice_type: '01')",
+  path: ["customer_id"]
 });
 
 router.post('/', async (req: AuthRequest, res, next) => {
   try {
+    console.log('=== CREATE INVOICE REQUEST ===');
     console.log('Received invoice data:', JSON.stringify(req.body, null, 2));
+    console.log('Tenant ID:', req.tenantId);
+
     const data = invoiceSchema.parse(req.body);
+    console.log('✓ Validation passed');
 
     // Calculate totals
     let subtotal = 0;
@@ -122,8 +136,23 @@ router.post('/', async (req: AuthRequest, res, next) => {
       subtotal += line_total;
       tax_amount += item_tax;
 
+      // Only convert product_id to ObjectId if it's a valid 24-char hex string
+      let productId: mongoose.Types.ObjectId | undefined;
+      if (item.product_id) {
+        try {
+          // Check if it's a valid ObjectId format (24 hex characters)
+          if (/^[0-9a-fA-F]{24}$/.test(item.product_id)) {
+            productId = new mongoose.Types.ObjectId(item.product_id);
+          } else {
+            console.log(`Skipping invalid product_id: ${item.product_id}`);
+          }
+        } catch (error) {
+          console.log(`Failed to convert product_id: ${item.product_id}`, error);
+        }
+      }
+
       return {
-        product_id: item.product_id ? new mongoose.Types.ObjectId(item.product_id) : undefined,
+        product_id: productId,
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -136,13 +165,14 @@ router.post('/', async (req: AuthRequest, res, next) => {
     });
 
     const total_amount = subtotal + tax_amount;
+    console.log('✓ Calculated totals - Subtotal:', subtotal, 'Tax:', tax_amount, 'Total:', total_amount);
 
     // Create invoice with items
-    const invoice = await Invoice.create({
+    const invoiceData: any = {
       tenant_id: req.tenantId,
       invoice_number: data.invoice_number,
       invoice_type: data.invoice_type,
-      customer_id: new mongoose.Types.ObjectId(data.customer_id),
+      customer_id: data.customer_id ? new mongoose.Types.ObjectId(data.customer_id) : undefined,
       issue_date: new Date(data.issue_date),
       due_date: data.due_date ? new Date(data.due_date) : undefined,
       currency: data.currency,
@@ -152,19 +182,27 @@ router.post('/', async (req: AuthRequest, res, next) => {
       total_amount,
       payment_method: data.payment_method,
       payment_terms: data.payment_terms,
-      status: 'draft',
+      status: 'draft' as const,
       items: itemsWithTotals,
       source: data.source || 'manual',
       pos_transaction_id: data.pos_transaction_id,
-    });
+    };
+
+    console.log('Creating invoice with data:', JSON.stringify(invoiceData, null, 2));
+    const invoice = await Invoice.create(invoiceData);
+    console.log('✓ Invoice created successfully:', invoice._id);
 
     res.status(201).json(invoice);
   } catch (error) {
+    console.error('=== CREATE INVOICE ERROR ===');
     if (error instanceof z.ZodError) {
-      console.error('Invoice validation errors:', JSON.stringify(error.issues, null, 2));
+      console.error('Validation errors:', JSON.stringify(error.issues, null, 2));
       const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
       next(new ValidationError(`Validation failed: ${errorMessages}`, undefined, error.issues));
     } else {
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', (error as any)?.message);
+      console.error('Error stack:', (error as any)?.stack);
       next(error);
     }
   }

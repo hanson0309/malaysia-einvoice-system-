@@ -19,7 +19,7 @@ export interface IInvoice extends Document {
   invoice_type: '01' | '02' | '03' | '04';
   original_invoice_id?: mongoose.Types.ObjectId;
   original_invoice_number?: string;
-  customer_id: mongoose.Types.ObjectId;
+  customer_id?: mongoose.Types.ObjectId;
   issue_date: Date;
   due_date?: Date;
   currency: string;
@@ -79,7 +79,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     original_invoice_id: { type: Schema.Types.ObjectId, ref: 'Invoice' },
     original_invoice_number: { type: String, maxlength: 50 },
-    customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+    customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: false },
     issue_date: { type: Date, required: true },
     due_date: { type: Date },
     currency: { type: String, required: true, default: 'MYR', maxlength: 3 },
