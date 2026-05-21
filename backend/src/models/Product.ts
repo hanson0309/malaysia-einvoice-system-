@@ -9,7 +9,6 @@ export interface IProduct extends Document {
   tax_type: 'SST' | 'E' | 'Z' | 'SR';
   tax_rate: number;
   tax_exemption_reason?: string;
-  classificationCode?: string;
   // POS fields
   barcode?: string;
   stock_quantity?: number;
@@ -39,7 +38,6 @@ const ProductSchema = new Schema<IProduct>(
     },
     tax_rate: { type: Number, required: true },
     tax_exemption_reason: { type: String, maxlength: 200 },
-    classificationCode: { type: String, maxlength: 50 },
     unit: { type: String, maxlength: 20 },
     // POS fields
     barcode: { type: String, maxlength: 50 },

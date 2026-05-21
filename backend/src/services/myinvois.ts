@@ -184,13 +184,28 @@ export class MyInvoisClient {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
-        logger.error('MyInvois submission error:', axiosError.response?.data);
+        const statusCode = axiosError.response?.status || 500;
+        const responseData = axiosError.response?.data as any;
+
+        logger.error('MyInvois submission error:', {
+          status: statusCode,
+          data: responseData
+        });
+
+        // Set error code based on status for retry logic
+        let errorCode: string | undefined;
+        if (statusCode === 422) {
+          errorCode = 'DUPLICATE_SUBMISSION'; // Non-retryable
+        } else if (statusCode >= 500) {
+          errorCode = String(statusCode); // Retryable server errors
+        }
+
         throw new AppError(
           `Failed to submit invoice to MyInvois: ${axiosError.message}`,
-          500,
+          statusCode,
           true,
-          undefined,
-          axiosError.response?.data as any
+          errorCode,
+          responseData
         );
       }
       throw error;
@@ -236,6 +251,21 @@ export class MyInvoisClient {
   static isRetryable(errorCode?: string): boolean {
     if (!errorCode) return false;
 
+    // Non-retryable errors
+    const nonRetryableCodes = [
+      'DUPLICATE_SUBMISSION', // 422 duplicate submission
+      '400', // Bad request
+      '401', // Unauthorized
+      '403', // Forbidden
+      '404', // Not found
+      '422', // Unprocessable entity
+    ];
+
+    if (nonRetryableCodes.some((code) => errorCode.includes(code))) {
+      return false;
+    }
+
+    // Retryable errors
     const retryableCodes = [
       'TIMEOUT',
       'NETWORK_ERROR',
@@ -256,7 +286,7 @@ export class MyInvoisClient {
  */
 export function buildMyInvoisPayload(
   invoice: IInvoice,
-  customer: ICustomer,
+  customer: ICustomer | null,
   tenant: ITenant
 ): any {
   const invoiceTypeMapping: Record<string, string> = {
@@ -610,12 +640,12 @@ export function buildMyInvoisPayload(
                   {
                     ID: [
                       {
-                        _: customer.registration_no,
-                        schemeID: customer.id_type,
+                        _: customer?.registration_no || 'NA',
+                        schemeID: customer?.id_type || 'NRIC',
                       },
                     ],
                   },
-                  ...(customer.tin_number
+                  ...(customer?.tin_number
                     ? [
                         {
                           ID: [
@@ -626,7 +656,16 @@ export function buildMyInvoisPayload(
                           ],
                         },
                       ]
-                    : []),
+                    : [
+                        {
+                          ID: [
+                            {
+                              _: 'EI00000000010',
+                              schemeID: 'TIN',
+                            },
+                          ],
+                        },
+                      ]),
                 ],
                 PostalAddress: [
                   {
@@ -634,11 +673,11 @@ export function buildMyInvoisPayload(
                       {
                         Line: [
                           {
-                            _: customer.address_line1 || 'NA',
+                            _: customer?.address_line1 || 'NA',
                           },
                         ],
                       },
-                      ...(customer.address_line2
+                      ...(customer?.address_line2
                         ? [
                             {
                               Line: [
@@ -652,24 +691,24 @@ export function buildMyInvoisPayload(
                     ],
                     CityName: [
                       {
-                        _: customer.city || 'NA',
+                        _: customer?.city || tenant.city || 'Kuala Lumpur',
                       },
                     ],
                     PostalZone: [
                       {
-                        _: customer.postcode || '00000',
+                        _: customer?.postcode || tenant.postcode || '50000',
                       },
                     ],
                     CountrySubentityCode: [
                       {
-                        _: customer.state_code || '14',
+                        _: customer?.state_code || tenant.state_code || '14',
                       },
                     ],
                     Country: [
                       {
                         IdentificationCode: [
                           {
-                            _: customer.country_code,
+                            _: customer?.country_code || 'MYS',
                             listID: 'ISO3166-1',
                             listAgencyID: '6',
                           },
@@ -682,12 +721,12 @@ export function buildMyInvoisPayload(
                   {
                     RegistrationName: [
                       {
-                        _: customer.name,
+                        _: customer?.name || 'General Public',
                       },
                     ],
                   },
                 ],
-                ...(customer.email || customer.phone
+                ...(customer?.email || customer?.phone
                   ? [
                       {
                         Contact: [

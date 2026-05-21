@@ -89,14 +89,13 @@ const invoiceItemSchema = z.object({
   tax_type: z.enum(['SST', 'E', 'Z', 'SR']),
   tax_rate: z.number().min(0).max(100),
   tax_exemption_reason: z.string().max(200).optional(),
-  classificationCode: z.string().max(50).optional(),
 });
 
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1).max(50),
   invoice_type: z.enum(['01', '02', '03', '04']),
   customer_id: z.string().optional(),
-  issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // Optional for POS invoices
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   currency: z.string().length(3).default('MYR'),
   exchange_rate: z.number().positive().default(1.0),
@@ -107,14 +106,14 @@ const invoiceSchema = z.object({
   source: z.enum(['manual', 'pos']).optional(),
   pos_transaction_id: z.string().optional(),
 }).refine((data) => {
-  // B2B invoices (type '01') require customer_id
-  if (data.invoice_type === '01') {
+  // Manual B2B invoices (type '01' with source 'manual') require customer_id
+  // POS invoices (type '01' with source 'pos') don't require customer_id (will use "General Public")
+  if (data.invoice_type === '01' && data.source === 'manual') {
     return !!data.customer_id;
   }
-  // B2C invoices (type '02') don't require customer_id
   return true;
 }, {
-  message: "customer_id is required for B2B invoices (invoice_type: '01')",
+  message: "customer_id is required for manual B2B invoices (invoice_type: '01')",
   path: ["customer_id"]
 });
 
@@ -161,7 +160,6 @@ router.post('/', async (req: AuthRequest, res, next) => {
         tax_rate: item.tax_rate,
         tax_amount: item_tax,
         tax_exemption_reason: item.tax_exemption_reason,
-        classificationCode: item.classificationCode,
         line_total,
       };
     });
@@ -169,13 +167,18 @@ router.post('/', async (req: AuthRequest, res, next) => {
     const total_amount = subtotal + tax_amount;
     console.log('✓ Calculated totals - Subtotal:', subtotal, 'Tax:', tax_amount, 'Total:', total_amount);
 
+    // Use server date for POS invoices if not provided (to avoid timezone issues)
+    const issueDate = data.issue_date
+      ? new Date(data.issue_date)
+      : new Date(); // Use server's current date
+
     // Create invoice with items
     const invoiceData: any = {
       tenant_id: req.tenantId,
       invoice_number: data.invoice_number,
       invoice_type: data.invoice_type,
       customer_id: data.customer_id ? new mongoose.Types.ObjectId(data.customer_id) : undefined,
-      issue_date: new Date(data.issue_date),
+      issue_date: issueDate,
       due_date: data.due_date ? new Date(data.due_date) : undefined,
       currency: data.currency,
       exchange_rate: data.exchange_rate,

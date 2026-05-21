@@ -15,7 +15,6 @@ const productSchema = z.object({
   description: z.string().optional(),
   price: z.number().positive().optional(), // Frontend field name
   unit_price: z.number().positive().optional(), // Backend field name
-  classificationCode: z.string().optional(), // Frontend field name
   tax_type: z.enum(['SST', 'E', 'Z', 'SR']).optional(),
   tax_rate: z.number().min(0).max(100).optional(),
   tax_exemption_reason: z.string().max(200).optional(),
@@ -38,7 +37,6 @@ router.post('/', async (req: AuthRequest, res, next) => {
 
     // Map frontend fields to backend fields
     const unitPrice = data.unit_price || data.price;
-    const classificationCode = data.classificationCode || '001'; // Default classification
 
     // Default tax settings (SST 6%)
     const taxType = data.tax_type || 'SST';
@@ -52,7 +50,6 @@ router.post('/', async (req: AuthRequest, res, next) => {
       tax_type: taxType,
       tax_rate: taxRate,
       tax_exemption_reason: data.tax_exemption_reason,
-      classificationCode: classificationCode,
       barcode: data.barcode,
       stock_quantity: data.stock_quantity || 0,
       reorder_level: data.reorder_level || 0,
@@ -136,7 +133,6 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
       tax_type: taxType,
       tax_rate: taxRate,
       tax_exemption_reason: data.tax_exemption_reason,
-      classificationCode: data.classificationCode,
     };
 
     // Add optional fields if provided

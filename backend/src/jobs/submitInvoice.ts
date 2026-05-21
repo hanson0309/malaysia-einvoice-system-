@@ -16,9 +16,17 @@ export async function processInvoiceSubmission(job: Job) {
       throw new Error('Invoice not found');
     }
 
-    const customer = await Customer.findById(invoice.customer_id);
-    if (!customer) {
-      throw new Error('Customer not found');
+    // For B2B invoices (type '01'), customer is required
+    // For B2C invoices (type '02'), customer is optional (will use default "General Public")
+    let customer = null;
+    if (invoice.customer_id) {
+      customer = await Customer.findById(invoice.customer_id);
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+    } else if (invoice.invoice_type === '01') {
+      // B2B invoice requires customer
+      throw new Error('Customer is required for B2B invoices (type 01)');
     }
 
     const tenant = await Tenant.findById(tenantId);

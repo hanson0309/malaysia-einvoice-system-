@@ -9,7 +9,6 @@ export interface IInvoiceItem {
   tax_rate: number;
   tax_amount: number;
   tax_exemption_reason?: string;
-  classificationCode?: string;
   line_total: number;
 }
 
@@ -65,7 +64,6 @@ const InvoiceItemSchema = new Schema<IInvoiceItem>({
   tax_rate: { type: Number, required: true },
   tax_amount: { type: Number, required: true },
   tax_exemption_reason: { type: String, maxlength: 200 },
-  classificationCode: { type: String, maxlength: 50 },
   line_total: { type: Number, required: true },
 });
 
