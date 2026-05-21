@@ -92,7 +92,11 @@ export default function ProductsPage() {
               className="search-input"
             />
           </div>
-          <Link to="/dashboard/products/new" className="btn-primary">
+          <Link
+            to="/dashboard/products/new"
+            className="btn-primary"
+            style={{ color: '#ffffff' }}
+          >
             <Plus className="w-4 h-4" />
             New Product
           </Link>

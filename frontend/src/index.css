@@ -124,11 +124,17 @@ h1, h2, h3, h4, h5, h6 {
 /* Custom button styles */
 .btn-primary {
   background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
-  color: var(--color-darker);
+  color: #ffffff;
   font-weight: 600;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+}
+
+.btn-primary:visited,
+.btn-primary:link {
+  color: #ffffff;
 }
 
 .btn-primary::before {

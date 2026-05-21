@@ -189,8 +189,17 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  text-decoration: none;
+}
+
+.btn-primary:visited {
+  color: #ffffff !important;
+}
+
+.btn-primary:link {
+  color: #ffffff !important;
 }
 
 .btn-primary:hover {
