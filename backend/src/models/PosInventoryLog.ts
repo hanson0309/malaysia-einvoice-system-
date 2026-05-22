@@ -9,7 +9,7 @@ export interface IPosInventoryLog extends Document {
   after_quantity: number;
   reference_id?: string;
   notes?: string;
-  created_by: mongoose.Types.ObjectId;
+  created_by?: mongoose.Types.ObjectId;
   created_at: Date;
 }
 
@@ -27,7 +27,7 @@ const PosInventoryLogSchema = new Schema<IPosInventoryLog>(
     after_quantity: { type: Number, required: true },
     reference_id: { type: String, maxlength: 100 },
     notes: { type: String, maxlength: 500 },
-    created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    created_by: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: false },

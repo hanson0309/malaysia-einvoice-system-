@@ -6,7 +6,7 @@ import { sendInvoiceRateLimiter } from '../middleware/rateLimiter';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
-import { Invoice, Customer, InvoiceSending, Tenant } from '../models';
+import { Invoice, Customer, InvoiceSending, Tenant, Product, PosInventoryLog } from '../models';
 import { PDFService } from '../services/pdfService';
 import { EmailService } from '../services/EmailService';
 import { WhatsAppService } from '../services/WhatsAppService';
@@ -118,6 +118,9 @@ const invoiceSchema = z.object({
 });
 
 router.post('/', async (req: AuthRequest, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     console.log('=== CREATE INVOICE REQUEST ===');
     console.log('Received invoice data:', JSON.stringify(req.body, null, 2));
@@ -126,43 +129,68 @@ router.post('/', async (req: AuthRequest, res, next) => {
     const data = invoiceSchema.parse(req.body);
     console.log('✓ Validation passed');
 
-    // Calculate totals
+    // Calculate totals and validate stock
     let subtotal = 0;
     let tax_amount = 0;
+    const stockValidationErrors: string[] = [];
 
-    const itemsWithTotals = data.items.map((item) => {
-      const line_total = item.quantity * item.unit_price;
-      const item_tax = (line_total * item.tax_rate) / 100;
-      subtotal += line_total;
-      tax_amount += item_tax;
+    const itemsWithTotals = await Promise.all(
+      data.items.map(async (item) => {
+        const line_total = item.quantity * item.unit_price;
+        const item_tax = (line_total * item.tax_rate) / 100;
+        subtotal += line_total;
+        tax_amount += item_tax;
 
-      // Only convert product_id to ObjectId if it's a valid 24-char hex string
-      let productId: mongoose.Types.ObjectId | undefined;
-      if (item.product_id) {
-        try {
-          // Check if it's a valid ObjectId format (24 hex characters)
-          if (/^[0-9a-fA-F]{24}$/.test(item.product_id)) {
-            productId = new mongoose.Types.ObjectId(item.product_id);
-          } else {
-            console.log(`Skipping invalid product_id: ${item.product_id}`);
+        // Only convert product_id to ObjectId if it's a valid 24-char hex string
+        let productId: mongoose.Types.ObjectId | undefined;
+        if (item.product_id) {
+          try {
+            // Check if it's a valid ObjectId format (24 hex characters)
+            if (/^[0-9a-fA-F]{24}$/.test(item.product_id)) {
+              productId = new mongoose.Types.ObjectId(item.product_id);
+
+              // Check stock availability
+              const product = await Product.findOne({
+                _id: productId,
+                tenant_id: req.tenantId,
+                deleted_at: null,
+              }).session(session);
+
+              if (product) {
+                const currentStock = product.stock_quantity || 0;
+                if (currentStock < item.quantity) {
+                  stockValidationErrors.push(
+                    `Insufficient stock for "${item.description}". Available: ${currentStock}, Required: ${item.quantity}`
+                  );
+                }
+              }
+            } else {
+              console.log(`Skipping invalid product_id: ${item.product_id}`);
+            }
+          } catch (error) {
+            console.log(`Failed to convert product_id: ${item.product_id}`, error);
           }
-        } catch (error) {
-          console.log(`Failed to convert product_id: ${item.product_id}`, error);
         }
-      }
 
-      return {
-        product_id: productId,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        tax_type: item.tax_type,
-        tax_rate: item.tax_rate,
-        tax_amount: item_tax,
-        tax_exemption_reason: item.tax_exemption_reason,
-        line_total,
-      };
-    });
+        return {
+          product_id: productId,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_type: item.tax_type,
+          tax_rate: item.tax_rate,
+          tax_amount: item_tax,
+          tax_exemption_reason: item.tax_exemption_reason,
+          line_total,
+        };
+      })
+    );
+
+    // If there are stock validation errors, abort the transaction
+    if (stockValidationErrors.length > 0) {
+      await session.abortTransaction();
+      throw new ValidationError(stockValidationErrors.join('; '));
+    }
 
     const total_amount = subtotal + tax_amount;
     console.log('✓ Calculated totals - Subtotal:', subtotal, 'Tax:', tax_amount, 'Total:', total_amount);
@@ -194,12 +222,63 @@ router.post('/', async (req: AuthRequest, res, next) => {
     };
 
     console.log('Creating invoice with data:', JSON.stringify(invoiceData, null, 2));
-    const invoice = await Invoice.create(invoiceData);
-    console.log('✓ Invoice created successfully:', invoice._id);
+    const invoice = await Invoice.create([invoiceData], { session });
+    console.log('✓ Invoice created successfully:', invoice[0]._id);
 
-    res.status(201).json(invoice);
+    // Deduct inventory for items with product_id
+    for (const item of itemsWithTotals) {
+      if (item.product_id) {
+        const product = await Product.findOne({
+          _id: item.product_id,
+          tenant_id: req.tenantId,
+          deleted_at: null,
+        }).session(session);
+
+        if (product) {
+          const beforeQuantity = product.stock_quantity || 0;
+          const afterQuantity = beforeQuantity - item.quantity;
+
+          // Update product stock using atomic operation
+          await Product.updateOne(
+            { _id: item.product_id },
+            { $inc: { stock_quantity: -item.quantity } },
+            { session }
+          );
+
+          // Log inventory change
+          await PosInventoryLog.create(
+            [
+              {
+                tenant_id: req.tenantId,
+                product_id: item.product_id,
+                transaction_type: 'sale',
+                quantity_change: -item.quantity,
+                before_quantity: beforeQuantity,
+                after_quantity: afterQuantity,
+                reference_id: invoice[0]._id.toString(),
+                notes: `Invoice ${data.invoice_number}`,
+                created_by: req.user?.user_id,
+              },
+            ],
+            { session }
+          );
+
+          console.log(`✓ Deducted ${item.quantity} units from product ${item.product_id}`);
+        }
+      }
+    }
+
+    // Commit the transaction
+    await session.commitTransaction();
+    console.log('✓ Transaction committed successfully');
+
+    res.status(201).json(invoice[0]);
   } catch (error) {
+    // Rollback transaction on error
+    await session.abortTransaction();
     console.error('=== CREATE INVOICE ERROR ===');
+    console.error('Transaction rolled back');
+
     if (error instanceof z.ZodError) {
       console.error('Validation errors:', JSON.stringify(error.issues, null, 2));
       const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
@@ -210,6 +289,8 @@ router.post('/', async (req: AuthRequest, res, next) => {
       console.error('Error stack:', (error as any)?.stack);
       next(error);
     }
+  } finally {
+    session.endSession();
   }
 });
 
