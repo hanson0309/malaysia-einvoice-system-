@@ -156,7 +156,7 @@ export class MyInvoisClient {
    */
   async submitInvoice(
     invoice: IInvoice,
-    customer: ICustomer,
+    customer: ICustomer | null,
     tenant: ITenant
   ): Promise<MyInvoisSubmissionResponse> {
     const token = await this.getAccessToken();
@@ -691,12 +691,12 @@ export function buildMyInvoisPayload(
                     ],
                     CityName: [
                       {
-                        _: customer?.city || tenant.city || 'Kuala Lumpur',
+                        _: customer?.city || 'NA',
                       },
                     ],
                     PostalZone: [
                       {
-                        _: customer?.postcode || tenant.postcode || '50000',
+                        _: customer?.postcode || '00000',
                       },
                     ],
                     CountrySubentityCode: [
@@ -726,30 +726,38 @@ export function buildMyInvoisPayload(
                     ],
                   },
                 ],
-                ...(customer?.email || customer?.phone
-                  ? [
-                      {
-                        Contact: [
-                          {
-                            ...(customer.phone && {
-                              Telephone: [
-                                {
-                                  _: customer.phone,
-                                },
-                              ],
-                            }),
-                            ...(customer.email && {
-                              ElectronicMail: [
-                                {
-                                  _: customer.email,
-                                },
-                              ],
-                            }),
-                          },
-                        ],
-                      },
-                    ]
-                  : []),
+                Contact: [
+                  {
+                    ...(customer?.phone && {
+                      Telephone: [
+                        {
+                          _: customer.phone,
+                        },
+                      ],
+                    }),
+                    ...(!customer?.phone && {
+                      Telephone: [
+                        {
+                          _: 'NA',
+                        },
+                      ],
+                    }),
+                    ...(customer?.email && {
+                      ElectronicMail: [
+                        {
+                          _: customer.email,
+                        },
+                      ],
+                    }),
+                    ...(!customer?.email && {
+                      ElectronicMail: [
+                        {
+                          _: 'NA',
+                        },
+                      ],
+                    }),
+                  },
+                ],
               },
             ],
           },

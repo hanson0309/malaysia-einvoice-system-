@@ -147,11 +147,11 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
                 ],
                 PostalAddress: [
                   {
-                    CityName: [{ _: tenant.city || 'Kuala Lumpur' }],
-                    PostalZone: [{ _: tenant.postcode || '50000' }],
+                    CityName: [{ _: 'NA' }],
+                    PostalZone: [{ _: '00000' }],
                     CountrySubentityCode: [{ _: tenant.state_code || '14' }],
                     AddressLine: [
-                      { Line: [{ _: tenant.address_line1 || 'Address Line 1' }] },
+                      { Line: [{ _: 'NA' }] },
                     ],
                     Country: [
                       { IdentificationCode: [{ _: 'MYS', listID: '3166-1', listAgencyID: 'ISO' }] },
@@ -160,8 +160,8 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
                 ],
                 Contact: [
                   {
-                    Telephone: [{ _: tenant.phone || '+60123456789' }],
-                    ElectronicMail: [{ _: tenant.email || 'contact@example.com' }],
+                    Telephone: [{ _: 'NA' }],
+                    ElectronicMail: [{ _: 'NA' }],
                   },
                 ],
               },
@@ -347,10 +347,10 @@ export function buildCombinedIRBDocument(
                 PartyLegalEntity: [{ RegistrationName: [{ _: 'General Public' }] }],
                 PostalAddress: [
                   {
-                    CityName: [{ _: tenant.city || 'Kuala Lumpur' }],
-                    PostalZone: [{ _: tenant.postcode || '50000' }],
+                    CityName: [{ _: 'NA' }],
+                    PostalZone: [{ _: '00000' }],
                     CountrySubentityCode: [{ _: tenant.state_code || '14' }],
-                    AddressLine: [{ Line: [{ _: tenant.address_line1 || 'Address Line 1' }] }],
+                    AddressLine: [{ Line: [{ _: 'NA' }] }],
                     Country: [
                       { IdentificationCode: [{ _: 'MYS', listID: '3166-1', listAgencyID: 'ISO' }] },
                     ],
@@ -358,8 +358,8 @@ export function buildCombinedIRBDocument(
                 ],
                 Contact: [
                   {
-                    Telephone: [{ _: tenant.phone || '+60123456789' }],
-                    ElectronicMail: [{ _: tenant.email || 'contact@example.com' }],
+                    Telephone: [{ _: 'NA' }],
+                    ElectronicMail: [{ _: 'NA' }],
                   },
                 ],
               },
