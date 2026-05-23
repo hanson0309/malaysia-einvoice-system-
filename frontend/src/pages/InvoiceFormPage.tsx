@@ -145,7 +145,7 @@ export default function InvoiceFormPage() {
       const invoiceData = {
         invoice_number: formData.invoice_number,
         invoice_type: formData.invoice_type,
-        customer_id: formData.customer_id,
+        customer_id: formData.customer_id || undefined,
         issue_date: formData.issue_date,
         due_date: formData.due_date || undefined,
         currency: formData.currency,
