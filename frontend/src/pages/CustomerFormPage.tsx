@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, X, User, Building2 } from 'lucide-react';
 import { customerApi } from '../lib/api';
+import '../styles/elegant-theme.css';
 
 interface CustomerFormData {
   name: string;
@@ -24,19 +25,19 @@ interface CustomerFormData {
 const inputStyle = {
   width: '100%',
   padding: '0.75rem',
-  borderRadius: '0.5rem',
-  background: 'rgba(30, 41, 59, 0.9)',
-  border: '1px solid rgba(139, 92, 246, 0.3)',
-  color: '#f1f5f9',
+  borderRadius: 'var(--radius-sharp)',
+  background: 'var(--elegant-overlay)',
+  border: 'none',
+  color: 'var(--elegant-text-primary)',
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.875rem',
   outline: 'none',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
+  transition: 'all 0.2s ease',
 };
 
 const inputFocusStyle = {
   ...inputStyle,
-  border: '1px solid rgba(139, 92, 246, 0.6)',
-  boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
+  boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.3)',
 };
 
 const getRegistrationPlaceholder = (idType: string) => {
@@ -189,37 +190,73 @@ export default function CustomerFormPage() {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="elegant-page">
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
-          {isEdit ? 'Edit Customer' : 'New Customer'}
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-          {isEdit ? 'Update customer information' : 'Add a new customer to your account'}
-        </p>
-      </div>
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              {isEdit ? 'Edit Customer' : 'New Customer'}
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {isEdit ? 'Update customer information' : 'Add a new customer to your account'}
+            </motion.p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Loading state */}
-      {isLoading && <div style={{ textAlign: 'center', color: '#94a3b8' }}>Loading...</div>}
+      {isLoading && (
+        <div className="elegant-loading">
+          <motion.div
+            className="elegant-spinner"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+      )}
 
       {/* Error display */}
       {error && (
-        <div style={{
-          padding: '1rem',
-          borderRadius: '0.75rem',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          marginBottom: '1.5rem',
-        }}>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            padding: '1rem',
+            borderRadius: 'var(--radius-sharp)',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            marginBottom: '1.5rem',
+          }}
+        >
           <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{error}</p>
-        </div>
+        </motion.div>
       )}
 
       {/* Customer Type Selection */}
       {!isLoading && (
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.75rem' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{ marginBottom: '1.5rem' }}
+        >
+          <label className="elegant-label">
             Customer Type *
           </label>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -237,46 +274,46 @@ export default function CustomerFormPage() {
                   style={{
                     flex: 1,
                     padding: '1rem',
-                    borderRadius: '0.75rem',
-                    background: isSelected ? `${type.color}20` : 'rgba(30, 41, 59, 0.5)',
-                    border: `2px solid ${isSelected ? type.color : 'rgba(139, 92, 246, 0.2)'}`,
+                    borderRadius: 'var(--radius-sharp)',
+                    background: isSelected ? `${type.color}20` : 'var(--elegant-overlay)',
+                    border: isSelected ? `2px solid ${type.color}` : 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '0.5rem',
                   }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Icon style={{ width: '24px', height: '24px', color: isSelected ? type.color : '#94a3b8' }} />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isSelected ? type.color : '#94a3b8' }}>
+                  <Icon style={{ width: '24px', height: '24px', color: isSelected ? type.color : 'var(--elegant-text-muted)' }} />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isSelected ? type.color : 'var(--elegant-text-muted)', fontFamily: 'var(--font-sans)' }}>
                     {type.label}
                   </span>
                 </motion.button>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Form */}
       {!isLoading && (
         <form onSubmit={handleSubmit}>
-          <div style={{
-            padding: '2rem',
-            borderRadius: '1.5rem',
-            background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-          }}>
+          <motion.div
+            className="elegant-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             {/* Basic Information */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--elegant-text-primary)', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
                 Basic Information
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>
+                  <label className="elegant-label">
                     Customer Name *
                   </label>
                   <input
@@ -505,7 +542,7 @@ export default function CustomerFormPage() {
             </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>

@@ -684,3 +684,20 @@
     justify-content: center;
   }
 }
+
+/* Select and Option Styles */
+select option {
+  background: var(--elegant-bg);
+  color: var(--elegant-text-primary);
+  padding: 0.5rem;
+}
+
+select option:checked,
+select option:hover {
+  background: var(--elegant-accent);
+  color: white;
+}
+
+select option[value=""] {
+  color: var(--elegant-text-muted);
+}
