@@ -44,12 +44,32 @@ export default function POSTransactionsPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
+      params.append('source', 'pos'); // Only get POS invoices
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
-      const response = await api.get(`/pos/transactions?${params.toString()}`);
-      setTransactions(response.data || []);
+      const response = await api.get(`/invoices?${params.toString()}`);
+      const invoices = response.data?.data || response.data || [];
+
+      // Transform invoices to transaction format
+      const transformedTransactions = invoices.map((inv: any) => ({
+        _id: inv._id,
+        transaction_number: inv.invoice_number,
+        date: inv.issue_date,
+        cashier: {
+          name: 'POS System',
+          employee_code: 'POS'
+        },
+        total_amount: inv.total_amount,
+        payment_method: inv.payment_method || 'cash',
+        status: inv.status,
+        invoice_id: inv._id,
+        items: inv.line_items || [],
+        created_at: inv.created_at
+      }));
+
+      setTransactions(transformedTransactions);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to load transactions');
       console.error(err);
