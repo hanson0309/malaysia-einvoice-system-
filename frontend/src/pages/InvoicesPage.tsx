@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Trash2, Search, FileText, Filter, CheckSquare, Square, Send, Download } from 'lucide-react';
+import { Plus, Eye, Trash2, Search, CheckSquare, Square, Send, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, irbApi, autoConsolidateApi } from '../lib/api';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
+import '../styles/elegant-theme.css';
 
 interface Invoice {
   id: string;
@@ -72,7 +73,7 @@ export default function InvoicesPage() {
       const mappedInvoices = invoicesData.map((inv: any) => ({
         id: inv._id,
         invoiceNumber: inv.invoice_number,
-        customerName: inv.customerName || inv.customer?.name || 'Unknown',
+        customerName: inv.customerName || inv.customer?.name || 'Walk-in Customer',
         date: inv.issue_date,
         total: inv.total_amount,
         status: mapStatus(inv.status),
@@ -215,106 +216,85 @@ export default function InvoicesPage() {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh'
-      }}>
+      <div className="elegant-loading">
         <motion.div
-          style={{ position: 'relative' }}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-            style={{
-              width: '48px',
-              height: '48px',
-              border: '4px solid rgba(139, 92, 246, 0.3)',
-              borderTopColor: '#8b5cf6',
-              borderRadius: '50%'
-            }}
-          />
-        </motion.div>
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="elegant-page">
       {/* Header */}
       <motion.div
+        className="elegant-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        style={{ marginBottom: '2rem' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <div style={{
-            padding: '0.5rem',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(234, 88, 12, 0.2) 100%)',
-            borderRadius: '0.75rem'
-          }}>
-            <FileText style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
-          </div>
-          <div>
-            <h1 style={{
-              fontSize: '2.25rem',
-              fontWeight: 700,
-              color: '#f1f5f9',
-              marginBottom: '0.25rem'
-            }}>
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
               Invoices
-            </h1>
-            <p style={{ fontSize: '1rem', color: '#94a3b8' }}>
-              Manage and track all your invoices
-            </p>
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredInvoices.length} {filteredInvoices.length === 1 ? 'invoice' : 'invoices'} found
+            </motion.p>
           </div>
+
+          <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
+            <motion.button
+              className="elegant-btn elegant-btn-primary"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              <span>New Invoice</span>
+            </motion.button>
+          </Link>
         </div>
       </motion.div>
 
-      {/* Filters and Actions */}
+      {/* Toolbar with Search and Filters */}
       <motion.div
+        className="elegant-toolbar"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        style={{
-          display: 'flex',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap',
-          alignItems: 'center'
-        }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        style={{ flexWrap: 'wrap' }}
       >
-        {/* Status Filter */}
-        <div style={{ position: 'relative' }}>
-          <Filter style={{
-            position: 'absolute',
-            left: '1rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '18px',
-            height: '18px',
-            color: '#94a3b8',
-            pointerEvents: 'none'
-          }} />
+        <div className="elegant-search-container">
+          <Search className="elegant-search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search invoices..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem 0.75rem 2.75rem',
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '0.75rem',
-              color: '#f1f5f9',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              outline: 'none',
-              minWidth: '150px'
-            }}
+            className="elegant-select"
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -322,507 +302,202 @@ export default function InvoicesPage() {
             <option value="validated">Validated</option>
             <option value="rejected">Rejected</option>
           </select>
-        </div>
 
-        {/* Source Filter */}
-        <div style={{ position: 'relative' }}>
           <select
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '0.75rem',
-              color: '#f1f5f9',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              outline: 'none',
-              minWidth: '150px'
-            }}
+            className="elegant-select"
           >
             <option value="all">All Sources</option>
             <option value="manual">Manual</option>
             <option value="pos">POS</option>
           </select>
         </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
-          <Search style={{
-            position: 'absolute',
-            left: '1rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '18px',
-            height: '18px',
-            color: '#94a3b8',
-            pointerEvents: 'none'
-          }} />
-          <input
-            type="text"
-            placeholder="Search invoices..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.75rem 1rem 0.75rem 2.75rem',
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '0.75rem',
-              color: '#f1f5f9',
-              fontSize: '0.875rem',
-              outline: 'none'
-            }}
-          />
-        </div>
-
-        {/* Batch Actions */}
-        {selectedInvoices.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
-          >
-            <span style={{
-              fontSize: '0.875rem',
-              color: '#94a3b8',
-              fontWeight: 500
-            }}>
-              {selectedInvoices.size} selected
-            </span>
-
-            <motion.button
-              onClick={handleBatchSubmit}
-              disabled={batchSubmitting}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.25rem',
-                background: batchSubmitting
-                  ? 'rgba(59, 130, 246, 0.3)'
-                  : 'rgba(59, 130, 246, 0.2)',
-                border: '1px solid rgba(59, 130, 246, 0.4)',
-                borderRadius: '0.75rem',
-                color: '#60a5fa',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: batchSubmitting ? 'not-allowed' : 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-              whileHover={!batchSubmitting ? { scale: 1.05 } : {}}
-              whileTap={!batchSubmitting ? { scale: 0.95 } : {}}
-            >
-              <Send style={{ width: '16px', height: '16px' }} />
-              {batchSubmitting ? 'Submitting...' : 'Submit to IRB'}
-            </motion.button>
-
-            <motion.button
-              onClick={handleBatchDelete}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.25rem',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                borderRadius: '0.75rem',
-                color: '#f87171',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Trash2 style={{ width: '16px', height: '16px' }} />
-              Delete
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* New Invoice Button */}
-        <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
-          <motion.button
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-              border: 'none',
-              borderRadius: '0.75rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus style={{ width: '18px', height: '18px' }} />
-            New Invoice
-          </motion.button>
-        </Link>
       </motion.div>
 
-      {/* Content */}
-      {filteredInvoices.length === 0 ? (
+      {/* Batch Actions */}
+      {selectedInvoices.size > 0 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            gap: '0.75rem',
             alignItems: 'center',
-            justifyContent: 'center',
-            padding: '4rem 2rem',
-            background: 'rgba(30, 41, 59, 0.5)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(139, 92, 246, 0.2)',
-            borderRadius: '1.5rem',
-            minHeight: '400px'
-          }}
-        >
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            style={{
-              padding: '2rem',
-              background: 'rgba(245, 158, 11, 0.1)',
-              borderRadius: '50%',
-              marginBottom: '1.5rem'
-            }}
-          >
-            <FileText style={{ width: '64px', height: '64px', color: '#f59e0b' }} />
-          </motion.div>
-          <h3 style={{
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: '#f1f5f9',
-            marginBottom: '0.5rem'
-          }}>
-            No invoices found
-          </h3>
-          <p style={{
-            fontSize: '1rem',
-            color: '#94a3b8',
             marginBottom: '1.5rem',
-            textAlign: 'center'
-          }}>
-            {searchQuery || statusFilter !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Get started by creating your first invoice'}
-          </p>
-          {!searchQuery && statusFilter === 'all' && (
-            <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
-              <motion.button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.875rem 1.75rem',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  color: 'white',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-                whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Plus style={{ width: '18px', height: '18px' }} />
-                Create Invoice
-              </motion.button>
-            </Link>
-          )}
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          style={{
-            background: 'rgba(30, 41, 59, 0.5)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(139, 92, 246, 0.2)',
-            borderRadius: '1.5rem',
-            overflow: 'hidden'
+            padding: '1rem',
+            background: 'var(--elegant-overlay)',
+            border: '1px solid var(--elegant-border)',
+            borderRadius: 'var(--radius-sharp)',
           }}
         >
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse'
-            }}>
+          <span style={{
+            fontSize: '0.875rem',
+            color: 'var(--elegant-text-muted)',
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 500
+          }}>
+            {selectedInvoices.size} selected
+          </span>
+
+          <motion.button
+            onClick={handleBatchSubmit}
+            disabled={batchSubmitting}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ fontSize: '0.8125rem', padding: '0.625rem 1.25rem' }}
+            whileHover={!batchSubmitting ? { y: -2 } : {}}
+            whileTap={!batchSubmitting ? { scale: 0.98 } : {}}
+          >
+            <Send size={16} />
+            {batchSubmitting ? 'Submitting...' : 'Submit to IRB'}
+          </motion.button>
+
+          <motion.button
+            onClick={handleBatchDelete}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.625rem 1.25rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-sharp)',
+              color: 'var(--elegant-accent-red-light)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            whileHover={{ y: -2, background: 'rgba(239, 68, 68, 0.15)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Trash2 size={16} />
+            Delete
+          </motion.button>
+        </motion.div>
+      )}
+
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        {filteredInvoices.length === 0 ? (
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="elegant-empty-icon">📄</div>
+            <h3 className="elegant-empty-title">No invoices found</h3>
+            <p className="elegant-empty-description">
+              {searchQuery || statusFilter !== 'all' || sourceFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Get started by creating your first invoice'}
+            </p>
+            {!searchQuery && statusFilter === 'all' && sourceFilter === 'all' && (
+              <Link to="/dashboard/invoices/new" style={{ textDecoration: 'none' }}>
+                <motion.button
+                  className="elegant-btn elegant-btn-primary"
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Plus size={18} />
+                  Create Invoice
+                </motion.button>
+              </Link>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            className="elegant-table-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <table className="elegant-table">
               <thead>
-                <tr style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-                    width: '50px'
-                  }}>
+                <tr>
+                  <th style={{ width: '50px', textAlign: 'center' }}>
                     <motion.button
                       onClick={toggleSelectAll}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#94a3b8'
-                      }}
+                      className="elegant-action-btn"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
                       {selectedInvoices.size === filteredInvoices.length && filteredInvoices.length > 0 ? (
-                        <CheckSquare style={{ width: '18px', height: '18px' }} />
+                        <CheckSquare size={18} />
                       ) : (
-                        <Square style={{ width: '18px', height: '18px' }} />
+                        <Square size={18} />
                       )}
                     </motion.button>
                   </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Invoice Number
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Customer
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Date
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Amount
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Status
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'left',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Source
-                  </th>
-                  <th style={{
-                    padding: '1rem 1.5rem',
-                    textAlign: 'right',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
-                    Actions
-                  </th>
+                  <th>Invoice Number</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Source</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInvoices.map((invoice, index) => {
-                  const statusColor = getStatusColor(invoice.status);
                   return (
                     <motion.tr
                       key={invoice.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      style={{
-                        borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
-                        transition: 'background 0.2s'
-                      }}
-                      whileHover={{ background: 'rgba(139, 92, 246, 0.05)' }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
                     >
-                      <td style={{
-                        padding: '1rem 1.5rem',
-                        textAlign: 'center'
-                      }}>
+                      <td style={{ textAlign: 'center' }}>
                         {['submitted', 'validated'].includes(invoice.status) ? null : (
                           <motion.button
                             onClick={() => toggleSelectInvoice(invoice.id)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: 0,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: selectedInvoices.has(invoice.id) ? '#8b5cf6' : '#94a3b8'
-                            }}
+                            className="elegant-action-btn"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                           >
                             {selectedInvoices.has(invoice.id) ? (
-                              <CheckSquare style={{ width: '18px', height: '18px' }} />
+                              <CheckSquare size={18} />
                             ) : (
-                              <Square style={{ width: '18px', height: '18px' }} />
+                              <Square size={18} />
                             )}
                           </motion.button>
                         )}
                       </td>
-                      <td style={{
-                        padding: '1rem 1.5rem',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#f1f5f9'
-                      }}>
+                      <td style={{ fontFamily: 'var(--font-sans)', fontWeight: 600 }}>
                         {invoice.invoiceNumber}
                       </td>
-                      <td style={{
-                        padding: '1rem 1.5rem',
-                        fontSize: '0.875rem',
-                        color: '#cbd5e1'
-                      }}>
-                        {invoice.customerName}
-                      </td>
-                      <td style={{
-                        padding: '1rem 1.5rem',
-                        fontSize: '0.875rem',
-                        color: '#94a3b8'
-                      }}>
-                        {formatDate(invoice.date)}
-                      </td>
-                      <td style={{
-                        padding: '1rem 1.5rem',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#f1f5f9'
-                      }}>
+                      <td>{invoice.customerName}</td>
+                      <td>{formatDate(invoice.date)}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>
                         {formatPrice(invoice.total)}
                       </td>
-                      <td style={{ padding: '1rem 1.5rem' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '0.375rem 0.75rem',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          background: statusColor.bg,
-                          color: statusColor.text,
-                          border: `1px solid ${statusColor.border}`
-                        }}>
+                      <td>
+                        <span className={`elegant-badge elegant-badge-${
+                          invoice.status === 'validated' ? 'success' :
+                          invoice.status === 'submitted' ? 'info' :
+                          invoice.status === 'rejected' ? 'danger' : 'neutral'
+                        }`}>
                           {invoice.status}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem 1.5rem' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '0.375rem 0.75rem',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          background: invoice.source === 'pos'
-                            ? 'rgba(139, 92, 246, 0.2)'
-                            : 'rgba(148, 163, 184, 0.2)',
-                          color: invoice.source === 'pos' ? '#a78bfa' : '#94a3b8',
-                          border: invoice.source === 'pos'
-                            ? '1px solid rgba(139, 92, 246, 0.3)'
-                            : '1px solid rgba(148, 163, 184, 0.3)'
-                        }}>
+                      <td>
+                        <span className={`elegant-badge elegant-badge-${invoice.source === 'pos' ? 'info' : 'neutral'}`}>
                           {invoice.source || 'manual'}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem 1.5rem' }}>
-                        <div style={{
-                          display: 'flex',
-                          gap: '0.5rem',
-                          justifyContent: 'flex-end'
-                        }}>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           <motion.button
                             onClick={() => setSelectedInvoiceId(invoice.id)}
-                            style={{
-                              padding: '0.5rem',
-                              background: 'rgba(59, 130, 246, 0.1)',
-                              border: '1px solid rgba(59, 130, 246, 0.3)',
-                              borderRadius: '0.5rem',
-                              color: '#60a5fa',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            whileHover={{ scale: 1.1, background: 'rgba(59, 130, 246, 0.2)' }}
+                            className="elegant-action-btn view"
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             title="View"
                           >
-                            <Eye style={{ width: '16px', height: '16px' }} />
+                            <Eye size={16} />
                           </motion.button>
                           <motion.button
                             onClick={() => {
@@ -830,43 +505,22 @@ export default function InvoicesPage() {
                               const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
                               window.open(`${apiUrl}/invoices/${invoice.id}/pdf?token=${token}`, '_blank');
                             }}
-                            style={{
-                              padding: '0.5rem',
-                              background: 'rgba(139, 92, 246, 0.1)',
-                              border: '1px solid rgba(139, 92, 246, 0.3)',
-                              borderRadius: '0.5rem',
-                              color: '#a78bfa',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            whileHover={{ scale: 1.1, background: 'rgba(139, 92, 246, 0.2)' }}
+                            className="elegant-action-btn download"
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             title="Download PDF"
                           >
-                            <Download style={{ width: '16px', height: '16px' }} />
+                            <Download size={16} />
                           </motion.button>
-                          {/* Only show delete button for draft invoices */}
                           {invoice.status === 'draft' && (
                             <motion.button
                               onClick={() => handleDelete(invoice.id)}
-                              style={{
-                                padding: '0.5rem',
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '0.5rem',
-                                color: '#f87171',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              whileHover={{ scale: 1.1, background: 'rgba(239, 68, 68, 0.2)' }}
+                              className="elegant-action-btn delete"
+                              whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               title="Delete"
                             >
-                              <Trash2 style={{ width: '16px', height: '16px' }} />
+                              <Trash2 size={16} />
                             </motion.button>
                           )}
                         </div>
@@ -876,9 +530,9 @@ export default function InvoicesPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Invoice Detail Modal */}
       <AnimatePresence>

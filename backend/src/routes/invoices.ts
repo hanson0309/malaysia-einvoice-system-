@@ -348,7 +348,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
       const invoiceObj: any = invoice.toObject();
       return {
         ...invoiceObj,
-        customerName: invoiceObj.customer_id?.name || 'Unknown',
+        customerName: invoiceObj.customer_id?.name || 'Walk-in Customer',
       };
     });
 

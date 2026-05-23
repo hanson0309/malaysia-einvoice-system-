@@ -7,6 +7,7 @@ import {
   type AutoConsolidateRunSummary,
   type JobProgress,
 } from '../lib/api';
+import '../styles/elegant-theme.css';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AutoConsolidateSettings | null>(null);
@@ -142,27 +143,45 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="elegant-page">
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ marginBottom: '1.5rem' }}
+        transition={{ duration: 0.6 }}
       >
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.25rem' }}>
-          Settings
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
-          Configure automatic consolidation for previous-month invoices.
-        </p>
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Settings
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Configure automatic consolidation for previous-month invoices.
+            </motion.p>
+          </div>
+        </div>
       </motion.div>
 
       {error && (
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           style={{
-            ...cardStyle,
             marginBottom: '1rem',
+            padding: '1rem',
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-sharp)',
             color: '#fca5a5',
             display: 'flex',
             alignItems: 'center',
@@ -171,22 +190,29 @@ export default function SettingsPage() {
         >
           <AlertCircle size={18} />
           {error}
-        </div>
+        </motion.div>
       )}
 
       {loading || !settings ? (
-        <div style={cardStyle}>Loading...</div>
+        <div className="elegant-loading">
+          <motion.div
+            className="elegant-spinner"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          className="elegant-card"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={cardStyle}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div style={{ marginBottom: '1.25rem' }}>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '0.25rem' }}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--elegant-text-primary)', marginBottom: '0.25rem', fontFamily: 'var(--font-sans)' }}>
               Auto-Consolidate to MyInvois
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            <p style={{ color: 'var(--elegant-text-muted)', fontSize: '0.85rem' }}>
               On the configured day each month (1st-7th), the server automatically picks up all
               draft invoices issued in the previous month and submits them to IRB in batches.
               This runs server-side regardless of whether you are logged in.
@@ -200,8 +226,8 @@ export default function SettingsPage() {
               alignItems: 'center',
               gap: '0.75rem',
               padding: '0.75rem 1rem',
-              background: 'rgba(15, 23, 42, 0.5)',
-              borderRadius: '0.75rem',
+              background: 'var(--elegant-overlay)',
+              borderRadius: 'var(--radius-sharp)',
               cursor: 'pointer',
               marginBottom: '1rem',
             }}
@@ -210,9 +236,9 @@ export default function SettingsPage() {
               type="checkbox"
               checked={settings.enabled}
               onChange={(e) => updateField('enabled', e.target.checked)}
-              style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+              style={{ width: '18px', height: '18px', accentColor: 'var(--elegant-accent-purple)' }}
             />
-            <span style={{ color: '#f1f5f9', fontSize: '0.95rem', fontWeight: 500 }}>
+            <span style={{ color: 'var(--elegant-text-primary)', fontSize: '0.95rem', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
               Enable automatic monthly consolidation
             </span>
           </label>
@@ -227,24 +253,24 @@ export default function SettingsPage() {
             }}
           >
             <div>
-              <div style={labelStyle}>
+              <label className="elegant-label">
                 <Calendar size={14} style={{ display: 'inline', marginRight: 4 }} />
                 Trigger day of month (1-7)
-              </div>
+              </label>
               <input
                 type="number"
                 min={1}
                 max={7}
                 value={settings.day}
                 onChange={(e) => updateField('day', Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
-                style={inputStyle}
+                className="elegant-input"
               />
             </div>
             <div>
-              <div style={labelStyle}>
+              <label className="elegant-label">
                 <Layers size={14} style={{ display: 'inline', marginRight: 4 }} />
                 Batch size (invoices per chunk)
-              </div>
+              </label>
               <input
                 type="number"
                 min={1}
@@ -253,7 +279,7 @@ export default function SettingsPage() {
                 onChange={(e) =>
                   updateField('batchSize', Math.max(1, Math.min(100, Number(e.target.value) || 1)))
                 }
-                style={inputStyle}
+                className="elegant-input"
               />
             </div>
           </div>
@@ -262,44 +288,33 @@ export default function SettingsPage() {
           <div
             style={{
               padding: '0.75rem 1rem',
-              background: 'rgba(15, 23, 42, 0.4)',
-              borderRadius: '0.5rem',
+              background: 'var(--elegant-overlay)',
+              borderRadius: 'var(--radius-sharp)',
               marginBottom: '1.25rem',
               fontSize: '0.8rem',
-              color: '#94a3b8',
+              color: 'var(--elegant-text-muted)',
             }}
           >
             <div>
-              <strong style={{ color: '#cbd5e1' }}>Last run:</strong>{' '}
+              <strong style={{ color: 'var(--elegant-text-secondary)' }}>Last run:</strong>{' '}
               {settings.lastRunAt ? new Date(settings.lastRunAt).toLocaleString() : 'never'}
             </div>
             {settings.lastStatus && (
               <div style={{ marginTop: 4 }}>
-                <strong style={{ color: '#cbd5e1' }}>Status:</strong> {settings.lastStatus}
+                <strong style={{ color: 'var(--elegant-text-secondary)' }}>Status:</strong> {settings.lastStatus}
               </div>
             )}
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <motion.button
               onClick={handleSave}
               disabled={saving}
-              whileHover={{ scale: saving ? 1 : 1.03 }}
-              whileTap={{ scale: saving ? 1 : 0.97 }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.65rem 1.25rem',
-                background: saving ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.2)',
-                border: '1px solid rgba(59,130,246,0.4)',
-                borderRadius: '0.65rem',
-                color: '#60a5fa',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer',
-              }}
+              className="elegant-btn elegant-btn-secondary"
+              style={{ fontSize: '0.875rem', padding: '0.65rem 1.25rem' }}
+              whileHover={!saving ? { y: -2 } : {}}
+              whileTap={!saving ? { scale: 0.98 } : {}}
             >
               {saving ? <RefreshCw size={16} className="spin" /> : <CheckCircle2 size={16} />}
               {saving ? 'Saving...' : 'Save settings'}
@@ -308,21 +323,23 @@ export default function SettingsPage() {
             <motion.button
               onClick={() => handleRun(true)}
               disabled={running}
-              whileHover={{ scale: running ? 1 : 1.03 }}
-              whileTap={{ scale: running ? 1 : 0.97 }}
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 padding: '0.65rem 1.25rem',
-                background: 'rgba(148,163,184,0.15)',
-                border: '1px solid rgba(148,163,184,0.3)',
-                borderRadius: '0.65rem',
-                color: '#cbd5e1',
+                background: 'rgba(148, 163, 184, 0.1)',
+                border: '1px solid rgba(148, 163, 184, 0.3)',
+                borderRadius: 'var(--radius-sharp)',
+                color: 'var(--elegant-text-secondary)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: '0.875rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: running ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
               }}
+              whileHover={!running ? { y: -2, background: 'rgba(148, 163, 184, 0.15)' } : {}}
+              whileTap={!running ? { scale: 0.98 } : {}}
             >
               <RefreshCw size={16} />
               Preview (dry-run)
@@ -331,21 +348,23 @@ export default function SettingsPage() {
             <motion.button
               onClick={() => handleRun(false)}
               disabled={running}
-              whileHover={{ scale: running ? 1 : 1.03 }}
-              whileTap={{ scale: running ? 1 : 0.97 }}
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 padding: '0.65rem 1.25rem',
-                background: running ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.2)',
-                border: '1px solid rgba(34,197,94,0.4)',
-                borderRadius: '0.65rem',
+                background: running ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)',
+                border: '1px solid rgba(34, 197, 94, 0.4)',
+                borderRadius: 'var(--radius-sharp)',
                 color: '#86efac',
+                fontFamily: 'var(--font-sans)',
                 fontSize: '0.875rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: running ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
               }}
+              whileHover={!running ? { y: -2, background: 'rgba(34, 197, 94, 0.2)' } : {}}
+              whileTap={!running ? { scale: 0.98 } : {}}
             >
               <Play size={16} />
               {running ? 'Running...' : 'Run now'}

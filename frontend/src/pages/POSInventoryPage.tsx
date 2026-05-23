@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Package, Plus, Minus, X } from 'lucide-react';
+import { Filter, Package, Plus, Minus, X, Search } from 'lucide-react';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
+import '../styles/elegant-theme.css';
 
 interface InventoryLog {
   _id: string;
@@ -24,6 +25,7 @@ export default function POSInventoryPage() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Adjust form
   const [adjustProductId, setAdjustProductId] = useState('');
@@ -125,6 +127,12 @@ export default function POSInventoryPage() {
     setRestockNotes('');
   };
 
+  const filteredLogs = logs.filter((log) =>
+    log.product_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    log.transaction_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    log.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'purchase':
@@ -140,158 +148,168 @@ export default function POSInventoryPage() {
     }
   };
 
-  return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
-            POS Inventory
-          </h1>
-          <p style={{ color: '#94a3b8' }}>Manage inventory adjustments and restocking</p>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <motion.button
-            onClick={() => setShowAdjustModal(true)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-              border: 'none',
-              color: 'white',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Minus style={{ width: '20px', height: '20px' }} />
-            Adjust Inventory
-          </motion.button>
-          <motion.button
-            onClick={() => setShowRestockModal(true)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              border: 'none',
-              color: 'white',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus style={{ width: '20px', height: '20px' }} />
-            Restock
-          </motion.button>
-        </div>
+  if (isLoading) {
+    return (
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
       </div>
+    );
+  }
 
-      {/* Filters */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        borderRadius: '1rem',
-        border: '1px solid rgba(139, 92, 246, 0.3)',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-      }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
-              Transaction Type
-            </label>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(15, 23, 42, 0.5)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                color: '#f1f5f9',
-                fontSize: '1rem',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
+  return (
+    <div className="elegant-page">
+      {/* Header */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <option value="all">All Types</option>
-              <option value="purchase">Purchase</option>
-              <option value="sale">Sale</option>
-              <option value="adjustment">Adjustment</option>
-              <option value="stocktake">Stocktake</option>
-            </select>
+              POS Inventory
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredLogs.length} {filteredLogs.length === 1 ? 'transaction' : 'transactions'} recorded
+            </motion.p>
           </div>
+
+          <motion.div
+            style={{ display: 'flex', gap: '0.75rem' }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <motion.button
+              onClick={() => setShowAdjustModal(true)}
+              className="elegant-btn elegant-btn-secondary"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Minus size={18} strokeWidth={2.5} />
+              <span>Adjust</span>
+            </motion.button>
+            <motion.button
+              onClick={() => setShowRestockModal(true)}
+              className="elegant-btn elegant-btn-primary"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              <span>Restock</span>
+            </motion.button>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Toolbar with Search and Filter */}
+      <motion.div
+        className="elegant-toolbar"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="elegant-search-container">
+          <Search className="elegant-search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search by product name, type, or notes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{
+              padding: '0.625rem 1rem',
+              borderRadius: 'var(--radius-sharp)',
+              background: 'var(--elegant-bg-secondary)',
+              border: '1px solid var(--elegant-border)',
+              color: 'var(--elegant-text-primary)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              outline: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <option value="all">All Types</option>
+            <option value="purchase">Purchase</option>
+            <option value="sale">Sale</option>
+            <option value="adjustment">Adjustment</option>
+            <option value="stocktake">Stocktake</option>
+          </select>
+
           <motion.button
             onClick={loadLogs}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              border: 'none',
-              color: 'white',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ padding: '0.625rem 1rem' }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Filter style={{ width: '20px', height: '20px' }} />
-            Apply Filter
+            <Filter size={16} />
+            <span>Apply</span>
           </motion.button>
         </div>
-      </div>
-
-      {/* Loading state */}
-      {isLoading && <div style={{ textAlign: 'center', color: '#94a3b8' }}>Loading...</div>}
+      </motion.div>
 
       {/* Inventory logs table */}
-      {!isLoading && logs.length > 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          overflow: 'hidden',
-        }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <AnimatePresence mode="wait">
+        {filteredLogs.length === 0 ? (
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="elegant-empty-icon">📦</div>
+            <h3 className="elegant-empty-title">No inventory logs found</h3>
+            <p className="elegant-empty-description">
+              {searchQuery ? 'Try adjusting your search criteria' : 'Start by adjusting inventory or restocking products'}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            className="elegant-table-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <table className="elegant-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Product
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Type
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Change
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Before
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    After
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Date
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Notes
-                  </th>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Product</th>
+                  <th style={{ textAlign: 'left' }}>Type</th>
+                  <th style={{ textAlign: 'right' }}>Change</th>
+                  <th style={{ textAlign: 'right' }}>Before</th>
+                  <th style={{ textAlign: 'right' }}>After</th>
+                  <th style={{ textAlign: 'left' }}>Date</th>
+                  <th style={{ textAlign: 'left' }}>Notes</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, index) => {
+                {filteredLogs.map((log, index) => {
                   const typeColor = getTypeColor(log.transaction_type);
 
                   return (
@@ -299,33 +317,41 @@ export default function POSInventoryPage() {
                       key={log._id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      style={{ borderBottom: '1px solid rgba(139, 92, 246, 0.1)' }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
                     >
-                      <td style={{ padding: '1rem' }}>
+                      <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '0.5rem',
-                            background: 'rgba(139, 92, 246, 0.2)',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: 'var(--radius-sharp)',
+                            background: 'rgba(139, 92, 246, 0.15)',
+                            border: '1px solid rgba(139, 92, 246, 0.3)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}>
-                            <Package style={{ width: '20px', height: '20px', color: '#8b5cf6' }} />
+                            <Package size={18} style={{ color: 'var(--elegant-accent-purple)' }} />
                           </div>
-                          <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{log.product_name}</span>
+                          <span style={{
+                            color: 'var(--elegant-text-primary)',
+                            fontFamily: 'var(--font-sans)',
+                            fontWeight: 500,
+                          }}>
+                            {log.product_name}
+                          </span>
                         </div>
                       </td>
-                      <td style={{ padding: '1rem' }}>
+                      <td>
                         <span style={{
+                          display: 'inline-block',
                           padding: '0.25rem 0.75rem',
                           borderRadius: '9999px',
                           background: typeColor.bg,
                           border: `1px solid ${typeColor.border}`,
                           color: typeColor.text,
-                          fontSize: '0.875rem',
+                          fontSize: '0.8125rem',
+                          fontFamily: 'var(--font-sans)',
                           fontWeight: 600,
                           textTransform: 'capitalize',
                         }}>
@@ -333,72 +359,94 @@ export default function POSInventoryPage() {
                         </span>
                       </td>
                       <td style={{
-                        padding: '1rem',
                         textAlign: 'right',
                         color: log.quantity_change > 0 ? '#10b981' : '#ef4444',
+                        fontFamily: 'var(--font-mono)',
                         fontWeight: 600,
+                        fontSize: '0.9375rem',
                       }}>
                         {log.quantity_change > 0 ? '+' : ''}{log.quantity_change}
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#94a3b8' }}>
+                      <td style={{
+                        textAlign: 'right',
+                        color: 'var(--elegant-text-muted)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.9375rem',
+                      }}>
                         {log.quantity_before}
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#f1f5f9', fontWeight: 600 }}>
+                      <td style={{
+                        textAlign: 'right',
+                        color: 'var(--elegant-text-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 600,
+                        fontSize: '0.9375rem',
+                      }}>
                         {log.quantity_after}
                       </td>
-                      <td style={{ padding: '1rem', color: '#94a3b8' }}>
+                      <td style={{
+                        color: 'var(--elegant-text-muted)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '0.875rem',
+                      }}>
                         {new Date(log.created_at).toLocaleString()}
                       </td>
-                      <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.875rem' }}>
-                        {log.notes || '-'}
+                      <td style={{
+                        color: 'var(--elegant-text-muted)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '0.875rem',
+                      }}>
+                        {log.notes || '—'}
                       </td>
                     </motion.tr>
                   );
                 })}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && logs.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '4rem' }}>
-          No inventory logs found. Start by adjusting inventory or restocking products.
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Adjust Inventory Modal */}
       <AnimatePresence>
         {showAdjustModal && (
-          <div
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             style={{
               position: 'fixed',
               inset: 0,
               background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(4px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 50,
+              zIndex: 100,
+              padding: '1rem',
             }}
             onClick={() => setShowAdjustModal(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="elegant-card"
               style={{
-                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                borderRadius: '1rem',
-                padding: '2rem',
                 maxWidth: '500px',
-                width: '90%',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
+                width: '100%',
+                padding: '2rem',
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#f1f5f9' }}>
+                <h3 style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.75rem',
+                  fontWeight: 500,
+                  color: 'var(--elegant-text-primary)',
+                }}>
                   Adjust Inventory
                 </h3>
                 <button
@@ -406,17 +454,25 @@ export default function POSInventoryPage() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#94a3b8',
+                    color: 'var(--elegant-text-muted)',
                     cursor: 'pointer',
                     padding: '0.25rem',
+                    transition: 'color 0.2s ease',
                   }}
                 >
-                  <X style={{ width: '24px', height: '24px' }} />
+                  <X size={24} />
                 </button>
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Product ID
                 </label>
                 <input
@@ -427,18 +483,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Quantity Change (use negative for decrease)
                 </label>
                 <input
@@ -449,18 +514,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Notes (optional)
                 </label>
                 <textarea
@@ -471,13 +545,15 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
                     resize: 'vertical',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
@@ -485,61 +561,60 @@ export default function POSInventoryPage() {
               <motion.button
                 onClick={handleAdjust}
                 disabled={isAdjusting}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '0.5rem',
-                  background: isAdjusting
-                    ? 'rgba(251, 191, 36, 0.5)'
-                    : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                  border: 'none',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: isAdjusting ? 'not-allowed' : 'pointer',
-                }}
-                whileHover={!isAdjusting ? { scale: 1.02 } : {}}
-                whileTap={!isAdjusting ? { scale: 0.95 } : {}}
+                className="elegant-btn elegant-btn-primary"
+                style={{ width: '100%' }}
+                whileHover={!isAdjusting ? { y: -2 } : {}}
+                whileTap={!isAdjusting ? { scale: 0.98 } : {}}
               >
                 {isAdjusting ? 'Adjusting...' : 'Adjust Inventory'}
               </motion.button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Restock Modal */}
       <AnimatePresence>
         {showRestockModal && (
-          <div
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             style={{
               position: 'fixed',
               inset: 0,
               background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(4px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 50,
+              zIndex: 100,
+              padding: '1rem',
             }}
             onClick={() => setShowRestockModal(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="elegant-card"
               style={{
-                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                borderRadius: '1rem',
-                padding: '2rem',
                 maxWidth: '500px',
-                width: '90%',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
+                width: '100%',
+                padding: '2rem',
                 maxHeight: '90vh',
                 overflowY: 'auto',
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#f1f5f9' }}>
+                <h3 style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.75rem',
+                  fontWeight: 500,
+                  color: 'var(--elegant-text-primary)',
+                }}>
                   Restock Inventory
                 </h3>
                 <button
@@ -547,17 +622,25 @@ export default function POSInventoryPage() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#94a3b8',
+                    color: 'var(--elegant-text-muted)',
                     cursor: 'pointer',
                     padding: '0.25rem',
+                    transition: 'color 0.2s ease',
                   }}
                 >
-                  <X style={{ width: '24px', height: '24px' }} />
+                  <X size={24} />
                 </button>
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Product ID
                 </label>
                 <input
@@ -568,18 +651,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Quantity
                 </label>
                 <input
@@ -590,18 +682,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Cost Per Unit (RM)
                 </label>
                 <input
@@ -613,18 +714,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Supplier (optional)
                 </label>
                 <input
@@ -635,18 +745,27 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--elegant-text-muted)',
+                  fontSize: '0.875rem',
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                }}>
                   Notes (optional)
                 </label>
                 <textarea
@@ -657,13 +776,15 @@ export default function POSInventoryPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#f1f5f9',
-                    fontSize: '1rem',
+                    borderRadius: 'var(--radius-sharp)',
+                    background: 'var(--elegant-bg-secondary)',
+                    border: '1px solid var(--elegant-border)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9375rem',
                     outline: 'none',
                     resize: 'vertical',
+                    transition: 'all 0.3s ease',
                   }}
                 />
               </div>
@@ -671,25 +792,15 @@ export default function POSInventoryPage() {
               <motion.button
                 onClick={handleRestock}
                 disabled={isRestocking}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '0.5rem',
-                  background: isRestocking
-                    ? 'rgba(139, 92, 246, 0.5)'
-                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  border: 'none',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: isRestocking ? 'not-allowed' : 'pointer',
-                }}
-                whileHover={!isRestocking ? { scale: 1.02 } : {}}
-                whileTap={!isRestocking ? { scale: 0.95 } : {}}
+                className="elegant-btn elegant-btn-primary"
+                style={{ width: '100%' }}
+                whileHover={!isRestocking ? { y: -2 } : {}}
+                whileTap={!isRestocking ? { scale: 0.98 } : {}}
               >
                 {isRestocking ? 'Restocking...' : 'Restock Inventory'}
               </motion.button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

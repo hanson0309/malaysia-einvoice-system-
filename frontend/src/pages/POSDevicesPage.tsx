@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Smartphone, Monitor, X, Copy, Check, Trash2 } from 'lucide-react';
+import { Plus, Smartphone, Monitor, X, Copy, Check, Trash2, Search } from 'lucide-react';
 import { posDevicesApi, type POSDevice } from '../lib/api';
 import toast from 'react-hot-toast';
+import '../styles/elegant-theme.css';
 
 export default function POSDevicesPage() {
   const [devices, setDevices] = useState<POSDevice[]>([]);
@@ -20,6 +21,7 @@ export default function POSDevicesPage() {
   const [deactivateConfirm, setDeactivateConfirm] = useState<{ id: string; name: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; status: string } | null>(null);
   const [deviceTimers, setDeviceTimers] = useState<Record<string, number>>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadDevices();
@@ -191,90 +193,159 @@ export default function POSDevicesPage() {
     }
   };
 
-  return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9' }}>POS Devices</h1>
-        <motion.button
-          onClick={() => setShowModal(true)}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Plus style={{ width: '20px', height: '20px' }} />
-          Generate Pairing Code
-        </motion.button>
-      </div>
+  const filteredDevices = devices.filter((device) =>
+    device.device_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    device.device_type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      {/* Loading/Error states */}
-      {isLoading && <div style={{ textAlign: 'center', color: '#94a3b8' }}>Loading...</div>}
-      {error && <div style={{ textAlign: 'center', color: '#ef4444' }}>{error}</div>}
+  if (isLoading) {
+    return (
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="elegant-page">
+      {/* Header */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              POS Devices
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredDevices.length} {filteredDevices.length === 1 ? 'device' : 'devices'} registered
+            </motion.p>
+          </div>
+
+          <motion.button
+            onClick={() => setShowModal(true)}
+            className="elegant-btn elegant-btn-primary"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span>Generate Pairing Code</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Search Bar */}
+      <motion.div
+        className="elegant-toolbar"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="elegant-search-container">
+          <Search className="elegant-search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search devices..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
+        </div>
+      </motion.div>
+
+      {/* Error state */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            padding: '1rem',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '2px',
+            color: '#f87171',
+            marginBottom: '2rem',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {error}
+        </motion.div>
+      )}
 
       {/* Device list table */}
-      {!isLoading && !error && devices.length > 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          overflow: 'hidden',
-        }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <AnimatePresence mode="wait">
+        {filteredDevices.length === 0 ? (
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="elegant-empty-icon">📱</div>
+            <h3 className="elegant-empty-title">No devices found</h3>
+            <p className="elegant-empty-description">
+              {searchQuery ? 'Try adjusting your search criteria' : 'Click "Generate Pairing Code" to add your first device'}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            className="elegant-table-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <table className="elegant-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Device Name
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Device Type
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Status
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Pairing Code
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Last Sync
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', color: '#8b5cf6', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Actions
-                  </th>
+                <tr>
+                  <th>Device Name</th>
+                  <th>Device Type</th>
+                  <th>Status</th>
+                  <th>Pairing Code</th>
+                  <th>Last Sync</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {devices.map((device, index) => {
-                  const statusColor = getStatusColor(device.status);
+                {filteredDevices.map((device, index) => {
                   const DeviceIcon = device.device_type === 'tablet' ? Smartphone : Monitor;
                   const timeLeft = deviceTimers[device._id] || 0;
-                  const isExpiringSoon = timeLeft > 0 && timeLeft < 300; // Less than 5 minutes
+                  const isExpiringSoon = timeLeft > 0 && timeLeft < 300;
 
                   return (
                     <motion.tr
                       key={device._id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      style={{ borderBottom: '1px solid rgba(139, 92, 246, 0.1)' }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
                     >
-                      <td style={{ padding: '1rem' }}>
+                      <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <div style={{
                             width: '40px',
                             height: '40px',
-                            borderRadius: '0.5rem',
+                            borderRadius: 'var(--radius-sharp)',
                             background: 'rgba(139, 92, 246, 0.2)',
                             display: 'flex',
                             alignItems: 'center',
@@ -282,29 +353,18 @@ export default function POSDevicesPage() {
                           }}>
                             <DeviceIcon style={{ width: '20px', height: '20px', color: '#8b5cf6' }} />
                           </div>
-                          <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{device.device_name}</span>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 500 }}>{device.device_name}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>
-                          {device.device_type}
-                        </span>
+                      <td style={{ textTransform: 'capitalize' }}>
+                        {device.device_type}
                       </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '9999px',
-                          background: statusColor.bg,
-                          border: `1px solid ${statusColor.border}`,
-                          color: statusColor.text,
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          textTransform: 'capitalize',
-                        }}>
+                      <td>
+                        <span className={`elegant-badge elegant-badge-${device.status === 'active' ? 'success' : device.status === 'pending' ? 'warning' : 'neutral'}`}>
                           {device.status}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem' }}>
+                      <td>
                         {device.status === 'pending' && device.pairing_code && timeLeft > 0 ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{
@@ -318,22 +378,14 @@ export default function POSDevicesPage() {
                             </span>
                             <motion.button
                               onClick={() => handleCopyDeviceCode(device.pairing_code!, device._id)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: copiedDeviceCode === device._id ? '#10b981' : '#8b5cf6',
-                                cursor: 'pointer',
-                                padding: '0.25rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                              }}
+                              className="elegant-action-btn"
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                             >
                               {copiedDeviceCode === device._id ? (
-                                <Check style={{ width: '16px', height: '16px' }} />
+                                <Check size={16} />
                               ) : (
-                                <Copy style={{ width: '16px', height: '16px' }} />
+                                <Copy size={16} />
                               )}
                             </motion.button>
                             <span style={{
@@ -346,31 +398,23 @@ export default function POSDevicesPage() {
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: '#64748b', fontSize: '0.875rem' }}>—</span>
+                          <span style={{ color: 'var(--elegant-text-subtle)' }}>—</span>
                         )}
                       </td>
-                      <td style={{ padding: '1rem', color: '#94a3b8' }}>
+                      <td>
                         {device.last_sync
                           ? new Date(device.last_sync).toLocaleString()
                           : 'Never'}
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                      <td>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           {device.status === 'active' ? (
                             <motion.button
                               onClick={() => handleDeactivate(device._id, device.device_name)}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.5rem',
-                                background: 'rgba(251, 191, 36, 0.2)',
-                                border: '1px solid rgba(251, 191, 36, 0.3)',
-                                color: '#fbbf24',
-                                fontWeight: 600,
-                                fontSize: '0.875rem',
-                                cursor: 'pointer',
-                              }}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.95 }}
+                              className="elegant-btn elegant-btn-secondary"
+                              style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }}
+                              whileHover={{ y: -2 }}
+                              whileTap={{ scale: 0.98 }}
                             >
                               Deactivate
                             </motion.button>
@@ -378,22 +422,24 @@ export default function POSDevicesPage() {
                             <motion.button
                               onClick={() => handleDelete(device._id, device.device_name, device.status)}
                               style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.5rem',
-                                background: 'rgba(239, 68, 68, 0.2)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                color: '#ef4444',
-                                fontWeight: 600,
-                                fontSize: '0.875rem',
-                                cursor: 'pointer',
-                                display: 'flex',
+                                display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: 'var(--radius-sharp)',
+                                color: 'var(--elegant-accent-red-light)',
+                                fontFamily: 'var(--font-sans)',
+                                fontSize: '0.8125rem',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
                               }}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.95 }}
+                              whileHover={{ y: -2, background: 'rgba(239, 68, 68, 0.15)' }}
+                              whileTap={{ scale: 0.98 }}
                             >
-                              <Trash2 style={{ width: '16px', height: '16px' }} />
+                              <Trash2 size={16} />
                               Delete
                             </motion.button>
                           )}
@@ -404,16 +450,9 @@ export default function POSDevicesPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && !error && devices.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '4rem' }}>
-          No POS devices yet. Click "Generate Pairing Code" to add one.
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Generate Pairing Code Modal */}
       <AnimatePresence>

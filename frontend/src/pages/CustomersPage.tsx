@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Mail, Phone, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Edit, Trash2, Mail, Phone, MapPin, Search } from 'lucide-react';
 import { customerApi } from '../lib/api';
+import '../styles/elegant-theme.css';
 
 interface Customer {
   _id: string;
@@ -20,6 +21,7 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadCustomers();
@@ -57,211 +59,348 @@ export default function CustomersPage() {
     }
   };
 
-  return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9' }}>Customers</h1>
-        <motion.button
-          onClick={() => navigate('/dashboard/customers/new')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Plus style={{ width: '20px', height: '20px' }} />
-          Add Customer
-        </motion.button>
-      </div>
+  const filteredCustomers = customers.filter((customer) =>
+    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.phone?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      {/* Loading/Error states */}
-      {isLoading && <div style={{ textAlign: 'center', color: '#94a3b8' }}>Loading...</div>}
-      {error && <div style={{ textAlign: 'center', color: '#ef4444' }}>{error}</div>}
+  if (isLoading) {
+    return (
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="elegant-page">
+      {/* Header */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Customers
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'} in directory
+            </motion.p>
+          </div>
+
+          <motion.button
+            onClick={() => navigate('/dashboard/customers/new')}
+            className="elegant-btn elegant-btn-primary"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span>New Customer</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Search Bar */}
+      <motion.div
+        className="elegant-toolbar"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="elegant-search-container">
+          <Search className="elegant-search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
+        </div>
+      </motion.div>
+
+      {/* Error state */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            padding: '1rem',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '2px',
+            color: '#f87171',
+            marginBottom: '2rem',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {error}
+        </motion.div>
+      )}
 
       {/* Customer grid */}
-      {!isLoading && !error && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-          {customers.map((customer, index) => (
-            <motion.div
-              key={customer._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              style={{
-                padding: '1.5rem',
-                borderRadius: '1rem',
-                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-              }}
-            >
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '0.5rem' }}>
-                  {customer.name}
-                </h3>
-                {customer.email && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    <Mail style={{ width: '16px', height: '16px' }} />
-                    {customer.email}
-                  </div>
-                )}
-                {customer.phone && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    <Phone style={{ width: '16px', height: '16px' }} />
-                    {customer.phone}
-                  </div>
-                )}
-                {customer.address_line1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.875rem' }}>
-                    <MapPin style={{ width: '16px', height: '16px' }} />
-                    {[customer.address_line1, customer.city, customer.state_code].filter(Boolean).join(', ')}
-                  </div>
-                )}
-              </div>
+      <AnimatePresence mode="wait">
+        {filteredCustomers.length === 0 ? (
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="elegant-empty-icon">👥</div>
+            <h3 className="elegant-empty-title">No customers found</h3>
+            <p className="elegant-empty-description">
+              {searchQuery ? 'Try adjusting your search criteria' : 'Start by adding your first customer'}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+              gap: '1.5rem',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            {filteredCustomers.map((customer, index) => (
+              <motion.div
+                key={customer._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.03 }}
+                className="elegant-card"
+                style={{ padding: '1.75rem' }}
+                whileHover={{ y: -4, borderColor: 'rgba(139, 92, 246, 0.3)' }}
+              >
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: '1.5rem',
+                      fontWeight: 500,
+                      color: 'var(--elegant-text-primary)',
+                      marginBottom: '1rem',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {customer.name}
+                  </h3>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                    {customer.email && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.625rem',
+                          color: 'var(--elegant-text-muted)',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <Mail size={16} style={{ flexShrink: 0 }} />
+                        <span style={{ fontFamily: 'var(--font-sans)' }}>{customer.email}</span>
+                      </div>
+                    )}
+                    {customer.phone && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.625rem',
+                          color: 'var(--elegant-text-muted)',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <Phone size={16} style={{ flexShrink: 0 }} />
+                        <span style={{ fontFamily: 'var(--font-sans)' }}>{customer.phone}</span>
+                      </div>
+                    )}
+                    {customer.address_line1 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.625rem',
+                          color: 'var(--elegant-text-muted)',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <MapPin size={16} style={{ flexShrink: 0, marginTop: '0.125rem' }} />
+                        <span style={{ fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
+                          {[customer.address_line1, customer.city, customer.state_code].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.625rem' }}>
+                  <motion.button
+                    onClick={() => navigate(`/dashboard/customers/${customer._id}/edit`)}
+                    className="elegant-btn elegant-btn-secondary"
+                    style={{ flex: 1, fontSize: '0.8125rem', padding: '0.625rem 1rem' }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Edit size={16} />
+                    <span>Edit</span>
+                  </motion.button>
+                  <motion.button
+                    onClick={() => handleDelete(customer._id, customer.name)}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.625rem 1rem',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: 'var(--radius-sharp)',
+                      color: 'var(--elegant-accent-red-light)',
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                    whileHover={{
+                      y: -2,
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      borderColor: 'rgba(239, 68, 68, 0.5)',
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100,
+              padding: '1rem',
+            }}
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="elegant-card"
+              style={{
+                maxWidth: '440px',
+                width: '100%',
+                padding: '2rem',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.75rem',
+                  fontWeight: 500,
+                  color: 'var(--elegant-text-primary)',
+                  marginBottom: '1rem',
+                }}
+              >
+                Delete Customer
+              </h3>
+              <p
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--elegant-text-muted)',
+                  marginBottom: '2rem',
+                  lineHeight: 1.6,
+                }}
+              >
+                Are you sure you want to delete <strong style={{ color: 'var(--elegant-text-primary)' }}>"{deleteConfirm.name}"</strong>? This action cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <motion.button
-                  onClick={() => navigate(`/dashboard/customers/${customer._id}/edit`)}
-                  aria-label={`Edit customer ${customer.name}`}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(139, 92, 246, 0.2)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: '#8b5cf6',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setDeleteConfirm(null)}
+                  className="elegant-btn elegant-btn-secondary"
+                  style={{ flex: 1 }}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Edit style={{ width: '16px', height: '16px' }} />
-                  Edit
+                  Cancel
                 </motion.button>
                 <motion.button
-                  onClick={() => handleDelete(customer._id, customer.name)}
-                  aria-label={`Delete customer ${customer.name}`}
+                  onClick={confirmDelete}
                   style={{
                     flex: 1,
-                    padding: '0.5rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    color: '#ef4444',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem',
+                    gap: '0.625rem',
+                    padding: '0.875rem 1.75rem',
+                    background: 'linear-gradient(135deg, var(--elegant-accent-red) 0%, #dc2626 100%)',
+                    color: 'var(--elegant-text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    border: 'none',
+                    borderRadius: 'var(--radius-sharp)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                   }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(239, 68, 68, 0.35)' }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Trash2 style={{ width: '16px', height: '16px' }} />
                   Delete
                 </motion.button>
               </div>
             </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && !error && customers.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '4rem' }}>
-          No customers yet. Click "Add Customer" to create one.
-        </div>
-      )}
-
-      {/* Delete confirmation modal */}
-      {deleteConfirm && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-          }}
-          onClick={() => setDeleteConfirm(null)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            style={{
-              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-              borderRadius: '1rem',
-              padding: '2rem',
-              maxWidth: '400px',
-              width: '90%',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
-              Delete Customer
-            </h3>
-            <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-              Are you sure you want to delete "{deleteConfirm.name}"? This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <motion.button
-                onClick={() => setDeleteConfirm(null)}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  borderRadius: '0.5rem',
-                  background: 'rgba(148, 163, 184, 0.2)',
-                  border: '1px solid rgba(148, 163, 184, 0.3)',
-                  color: '#94a3b8',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Cancel
-              </motion.button>
-              <motion.button
-                onClick={confirmDelete}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  borderRadius: '0.5rem',
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  border: 'none',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Delete
-              </motion.button>
-            </div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

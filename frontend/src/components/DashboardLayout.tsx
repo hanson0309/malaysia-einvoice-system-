@@ -95,13 +95,13 @@ export default function DashboardLayout() {
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'SQL Connection', href: '/dashboard/sql-connection', icon: Database },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
+    { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
     { name: 'POS Devices', href: '/dashboard/pos-devices', icon: Smartphone, section: 'POS Management' },
     { name: 'POS Transactions', href: '/dashboard/pos-transactions', icon: Receipt, section: 'POS Management' },
     { name: 'POS Inventory', href: '/dashboard/pos-inventory', icon: PackageOpen, section: 'POS Management' },
     { name: 'POS Appointments', href: '/dashboard/pos-appointments', icon: Calendar, section: 'POS Management' },
     { name: 'POS Employees', href: '/dashboard/pos-employees', icon: UserCog, section: 'POS Management' },
     { name: 'POS Settings', href: '/dashboard/pos-settings', icon: Sliders, section: 'POS Management' },
-    { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
+import '../styles/elegant-theme.css';
 
 interface POSSettings {
   _id?: string;
@@ -99,66 +100,86 @@ export default function POSSettingsPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-        Loading settings...
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   if (!settings) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
-        Failed to load settings
+      <div className="elegant-page">
+        <div className="elegant-empty-state">
+          <div className="elegant-empty-icon">⚙️</div>
+          <h3 className="elegant-empty-title">Failed to load settings</h3>
+          <p className="elegant-empty-description">Please try refreshing the page</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="elegant-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
-            POS Settings
-          </h1>
-          <p style={{ color: '#94a3b8' }}>Configure POS modules and hardware settings</p>
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              POS Settings
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Configure POS modules and hardware settings
+            </motion.p>
+          </div>
+
+          <motion.button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="elegant-btn elegant-btn-primary"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            whileHover={!isSaving ? { y: -2 } : {}}
+            whileTap={!isSaving ? { scale: 0.98 } : {}}
+          >
+            <Save size={20} />
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </motion.button>
         </div>
-        <motion.button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: isSaving
-              ? 'rgba(139, 92, 246, 0.5)'
-              : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 600,
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-          whileHover={!isSaving ? { scale: 1.02 } : {}}
-          whileTap={!isSaving ? { scale: 0.95 } : {}}
-        >
-          <Save style={{ width: '20px', height: '20px' }} />
-          {isSaving ? 'Saving...' : 'Save Settings'}
-        </motion.button>
-      </div>
+      </motion.div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Business Type */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          padding: '1.5rem',
-        }}>
+        <motion.div
+          className="elegant-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <SettingsIcon style={{ width: '24px', height: '24px', color: '#8b5cf6' }} />
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9' }}>Business Type</h2>
+            <SettingsIcon size={24} style={{ color: 'var(--elegant-accent-purple)' }} />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--elegant-text-primary)', fontFamily: 'var(--font-sans)' }}>
+              Business Type
+            </h2>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             {(['retail', 'service', 'both'] as const).map((type) => (
@@ -167,13 +188,13 @@ export default function POSSettingsPage() {
                 style={{
                   flex: 1,
                   padding: '1rem',
-                  borderRadius: '0.75rem',
+                  borderRadius: 'var(--radius-sharp)',
                   background: settings.business_type === type
-                    ? 'rgba(139, 92, 246, 0.2)'
-                    : 'rgba(15, 23, 42, 0.5)',
+                    ? 'rgba(139, 92, 246, 0.15)'
+                    : 'var(--elegant-overlay)',
                   border: settings.business_type === type
-                    ? '2px solid rgba(139, 92, 246, 0.5)'
-                    : '1px solid rgba(139, 92, 246, 0.3)',
+                    ? '2px solid var(--elegant-accent-purple)'
+                    : 'none',
                   cursor: 'pointer',
                   textAlign: 'center',
                   transition: 'all 0.2s',
@@ -188,25 +209,26 @@ export default function POSSettingsPage() {
                   style={{ display: 'none' }}
                 />
                 <span style={{
-                  color: settings.business_type === type ? '#8b5cf6' : '#94a3b8',
+                  color: settings.business_type === type ? 'var(--elegant-accent-purple)' : 'var(--elegant-text-muted)',
                   fontWeight: 600,
                   textTransform: 'capitalize',
+                  fontFamily: 'var(--font-sans)',
                 }}>
                   {type}
                 </span>
               </label>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Modules */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          padding: '1.5rem',
-        }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
+        <motion.div
+          className="elegant-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--elegant-text-primary)', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
             Enabled Modules
           </h2>
           <div style={{ display: 'grid', gap: '1rem' }}>
@@ -218,13 +240,13 @@ export default function POSSettingsPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '1rem',
-                  borderRadius: '0.75rem',
-                  background: 'rgba(15, 23, 42, 0.5)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: 'var(--radius-sharp)',
+                  background: 'var(--elegant-overlay)',
+                  border: 'none',
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ color: '#f1f5f9', fontWeight: 500, textTransform: 'capitalize' }}>
+                <span style={{ color: 'var(--elegant-text-primary)', fontWeight: 500, textTransform: 'capitalize', fontFamily: 'var(--font-sans)' }}>
                   {key.replace(/_/g, ' ')}
                 </span>
                 <div style={{ position: 'relative' }}>
@@ -257,16 +279,16 @@ export default function POSSettingsPage() {
               </label>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Invoice Settings */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          padding: '1.5rem',
-        }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
+        <motion.div
+          className="elegant-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--elegant-text-primary)', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
             Invoice Settings
           </h2>
           <div style={{ display: 'grid', gap: '1rem' }}>
@@ -275,12 +297,12 @@ export default function POSSettingsPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '1rem',
-              borderRadius: '0.75rem',
-              background: 'rgba(15, 23, 42, 0.5)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: 'var(--radius-sharp)',
+              background: 'var(--elegant-overlay)',
+              border: 'none',
               cursor: 'pointer',
             }}>
-              <span style={{ color: '#f1f5f9', fontWeight: 500 }}>
+              <span style={{ color: 'var(--elegant-text-primary)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
                 Auto Create Invoice on Payment
               </span>
               <div style={{ position: 'relative' }}>
@@ -294,7 +316,7 @@ export default function POSSettingsPage() {
                   width: '48px',
                   height: '24px',
                   borderRadius: '12px',
-                  background: settings.invoice_settings.auto_create_on_payment ? '#8b5cf6' : '#475569',
+                  background: settings.invoice_settings.auto_create_on_payment ? 'var(--elegant-accent-purple)' : '#475569',
                   position: 'relative',
                   transition: 'background 0.2s',
                 }}>
@@ -317,12 +339,12 @@ export default function POSSettingsPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '1rem',
-              borderRadius: '0.75rem',
-              background: 'rgba(15, 23, 42, 0.5)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: 'var(--radius-sharp)',
+              background: 'var(--elegant-overlay)',
+              border: '1px solid var(--elegant-border)',
               cursor: 'pointer',
             }}>
-              <span style={{ color: '#f1f5f9', fontWeight: 500 }}>
+              <span style={{ color: 'var(--elegant-text-primary)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
                 Require Customer for Invoice
               </span>
               <div style={{ position: 'relative' }}>
@@ -378,16 +400,16 @@ export default function POSSettingsPage() {
               </select>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Hardware Settings */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderRadius: '1rem',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          padding: '1.5rem',
-        }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '1rem' }}>
+        <motion.div
+          className="elegant-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--elegant-text-primary)', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
             Hardware Configuration
           </h2>
           <div style={{ display: 'grid', gap: '1rem' }}>
@@ -399,13 +421,13 @@ export default function POSSettingsPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '1rem',
-                  borderRadius: '0.75rem',
-                  background: 'rgba(15, 23, 42, 0.5)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: 'var(--radius-sharp)',
+                  background: 'var(--elegant-overlay)',
+                  border: 'none',
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ color: '#f1f5f9', fontWeight: 500, textTransform: 'capitalize' }}>
+                <span style={{ color: 'var(--elegant-text-primary)', fontWeight: 500, textTransform: 'capitalize', fontFamily: 'var(--font-sans)' }}>
                   {key.replace(/_/g, ' ')}
                 </span>
                 <div style={{ position: 'relative' }}>
@@ -419,7 +441,7 @@ export default function POSSettingsPage() {
                     width: '48px',
                     height: '24px',
                     borderRadius: '12px',
-                    background: value ? '#8b5cf6' : '#475569',
+                    background: value ? 'var(--elegant-accent-purple)' : '#475569',
                     position: 'relative',
                     transition: 'background 0.2s',
                   }}>
@@ -438,7 +460,7 @@ export default function POSSettingsPage() {
               </label>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

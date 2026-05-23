@@ -1,17 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Download, FileSpreadsheet, Upload } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { productApi } from '../lib/api';
 import * as XLSX from 'xlsx';
-import '../styles/dashboard.css';
+import '../styles/elegant-theme.css';
 
 interface Product {
   _id: string;
   name: string;
   description?: string;
-  price: number;
+  unit_price: number;
   classificationCode?: string;
   barcode?: string;
   stock_quantity?: number;
@@ -72,7 +72,7 @@ export default function ProductsPage() {
       const exportData = filteredProducts.map((product) => ({
         Name: product.name,
         Description: product.description || '',
-        Price: product.price,
+        Price: product.unit_price,
         Barcode: product.barcode || '',
         Stock: product.stock_quantity || 0,
         'Reorder Level': product.reorder_level || 0,
@@ -241,7 +241,7 @@ export default function ProductsPage() {
         const product = {
           name: row.Name.toString().trim(),
           description: row.Description?.toString().trim() || '',
-          price: Number(row.Price),
+          unit_price: Number(row.Price),
           barcode: row.Barcode?.toString().trim() || '',
           stock_quantity: row.Stock ? Number(row.Stock) : 0,
           reorder_level: row['Reorder Level'] ? Number(row['Reorder Level']) : 0,
@@ -305,196 +305,234 @@ export default function ProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="spinner"></div>
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Products</h1>
-          <p className="page-subtitle">Manage your product catalog</p>
-        </div>
-      </div>
-
-      <div className="table-container">
-        <div className="table-header">
-          <div className="search-box">
-            <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
+    <div className="elegant-page">
+      {/* Header Section */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Product Catalog
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} in inventory
+            </motion.p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
 
+          <Link to="/dashboard/products/new" style={{ textDecoration: 'none' }}>
             <motion.button
-              onClick={handleDownloadTemplate}
-              className="btn-secondary"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(139, 92, 246, 0.1)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                color: '#a78bfa',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-              whileHover={{ scale: 1.02 }}
+              className="elegant-btn elegant-btn-primary"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              Download Template
+              <Plus size={18} strokeWidth={2.5} />
+              <span>New Product</span>
             </motion.button>
+          </Link>
+        </div>
+      </motion.div>
 
-            <motion.button
-              onClick={handleImportClick}
-              disabled={isImporting}
-              className="btn-secondary"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1rem',
-                borderRadius: '0.5rem',
-                background: isImporting ? 'rgba(148, 163, 184, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                border: `1px solid ${isImporting ? 'rgba(148, 163, 184, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
-                color: isImporting ? '#94a3b8' : '#60a5fa',
-                fontWeight: 600,
-                cursor: isImporting ? 'not-allowed' : 'pointer',
-              }}
-              whileHover={!isImporting ? { scale: 1.02 } : {}}
-              whileTap={!isImporting ? { scale: 0.98 } : {}}
-            >
-              <Upload className="w-4 h-4" />
-              {isImporting ? 'Importing...' : 'Import Excel'}
-            </motion.button>
-
-            <motion.button
-              onClick={handleExportExcel}
-              className="btn-secondary"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                color: '#4ade80',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Download className="w-4 h-4" />
-              Export Excel
-            </motion.button>
-
-            <Link
-              to="/dashboard/products/new"
-              className="btn-primary"
-              style={{ color: '#ffffff' }}
-            >
-              <Plus className="w-4 h-4" />
-              New Product
-            </Link>
-          </div>
+      {/* Toolbar Section */}
+      <motion.div
+        className="elegant-toolbar"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="elegant-search-container">
+          <Search className="elegant-search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search by product name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
         </div>
 
+        <div className="elegant-toolbar-actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+
+          <motion.button
+            onClick={handleDownloadTemplate}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ fontSize: '0.8125rem', padding: '0.75rem 1.25rem' }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <FileSpreadsheet size={16} />
+            <span>Template</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleImportClick}
+            disabled={isImporting}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ fontSize: '0.8125rem', padding: '0.75rem 1.25rem' }}
+            whileHover={!isImporting ? { y: -2 } : {}}
+            whileTap={!isImporting ? { scale: 0.98 } : {}}
+          >
+            <Upload size={16} />
+            <span>{isImporting ? 'Importing...' : 'Import'}</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleExportExcel}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ fontSize: '0.8125rem', padding: '0.75rem 1.25rem' }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Download size={16} />
+            <span>Export</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Products Grid/Table */}
+      <AnimatePresence mode="wait">
         {filteredProducts.length === 0 ? (
-          <div className="empty-state">
-            <p>No products found</p>
-          </div>
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="elegant-empty-icon">📦</div>
+            <h3 className="elegant-empty-title">No products found</h3>
+            <p className="elegant-empty-description">Start by adding your first product to the catalog</p>
+          </motion.div>
         ) : (
-          <div className="table-wrapper">
-            <table className="data-table">
+          <motion.div
+            className="elegant-table-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <table className="elegant-table">
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Product Name</th>
                   <th>Description</th>
                   <th>Price</th>
                   <th>Barcode</th>
                   <th>Stock</th>
                   <th>Unit</th>
-                  <th>Classification Code</th>
-                  <th className="actions-column">Actions</th>
+                  <th>Classification</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product, index) => (
                   <motion.tr
                     key={product._id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="table-row"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.03 }}
                   >
-                    <td className="font-medium">{product.name}</td>
-                    <td className="text-gray-600">
-                      {product.description
-                        ? product.description.length > 50
-                          ? product.description.substring(0, 50) + '...'
-                          : product.description
-                        : '-'}
+                    <td style={{ fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
+                      {product.name}
                     </td>
-                    <td className="price-cell">{formatPrice(product.price)}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                      {product.barcode || '-'}
+                    <td>
+                      {product.description
+                        ? product.description.length > 60
+                          ? product.description.substring(0, 60) + '...'
+                          : product.description
+                        : '—'}
+                    </td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                      {formatPrice(product.unit_price)}
+                    </td>
+                    <td>
+                      {product.barcode || '—'}
                     </td>
                     <td>
                       {product.stock_quantity !== undefined ? (
-                        <span style={{
-                          color: (product.reorder_level && product.stock_quantity <= product.reorder_level)
-                            ? '#f87171'
-                            : '#34d399'
-                        }}>
+                        <span className={`elegant-badge ${
+                          product.reorder_level && product.stock_quantity <= product.reorder_level
+                            ? 'elegant-badge-danger'
+                            : 'elegant-badge-success'
+                        }`}>
                           {product.stock_quantity}
                         </span>
-                      ) : '-'}
+                      ) : (
+                        <span style={{ color: 'var(--elegant-text-muted)' }}>—</span>
+                      )}
                     </td>
-                    <td>{product.unit || '-'}</td>
-                    <td>{product.classificationCode || '-'}</td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
+                    <td>
+                      {product.unit || '—'}
+                    </td>
+                    <td>
+                      {product.classificationCode || '—'}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                         <Link
                           to={`/dashboard/products/${product._id}/edit`}
-                          className="action-btn edit-btn"
+                          style={{ textDecoration: 'none' }}
                         >
-                          <Edit className="w-4 h-4" />
+                          <motion.button
+                            className="elegant-action-btn edit"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Edit product"
+                          >
+                            <Edit size={16} />
+                          </motion.button>
                         </Link>
-                        <button
+                        <motion.button
                           onClick={() => handleDelete(product._id)}
-                          className="action-btn delete-btn"
+                          className="elegant-action-btn delete"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          title="Delete product"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          <Trash2 size={16} />
+                        </motion.button>
                       </div>
                     </td>
                   </motion.tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

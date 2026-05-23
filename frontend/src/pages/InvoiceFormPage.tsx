@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, customerApi, productApi, invoiceTemplateApi } from '../lib/api';
 import TemplateModal from '../components/TemplateModal';
+import '../styles/elegant-theme.css';
 
 interface LineItem {
   product: string;
@@ -94,8 +95,8 @@ export default function InvoiceFormPage() {
         ...newItems[index],
         product: productId,
         description: product.name,
-        unit_price: product.price,
-        amount: product.price * newItems[index].quantity,
+        unit_price: product.unit_price,
+        amount: product.unit_price * newItems[index].quantity,
       };
       setLineItems(newItems);
     }
@@ -225,87 +226,76 @@ export default function InvoiceFormPage() {
   const inputStyle = {
     width: '100%',
     padding: '0.75rem 1rem',
-    background: 'rgba(30, 41, 59, 0.8)',
-    border: '1px solid rgba(139, 92, 246, 0.3)',
-    borderRadius: '0.75rem',
-    color: '#f1f5f9',
+    background: 'var(--elegant-overlay)',
+    border: 'none',
+    borderRadius: 'var(--radius-sharp)',
+    color: 'var(--elegant-text-primary)',
+    fontFamily: 'var(--font-sans)',
     fontSize: '0.875rem',
     outline: 'none',
+    transition: 'all 0.2s ease',
   };
 
   const labelStyle = {
     display: 'block',
-    fontSize: '0.875rem',
+    fontSize: '0.75rem',
     fontWeight: 600,
-    color: '#cbd5e1',
+    color: 'var(--elegant-text-muted)',
+    fontFamily: 'var(--font-sans)',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const,
     marginBottom: '0.5rem',
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="elegant-page">
       {/* Header */}
       <motion.div
+        className="elegant-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        style={{ marginBottom: '2rem' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              padding: '0.5rem',
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(234, 88, 12, 0.2) 100%)',
-              borderRadius: '0.75rem'
-            }}>
-              <FileText style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
-            </div>
-            <div>
-              <h1 style={{
-                fontSize: '2.25rem',
-                fontWeight: 700,
-                color: '#f1f5f9',
-                marginBottom: '0.25rem'
-              }}>
-                Create Invoice
-              </h1>
-              <p style={{ fontSize: '1rem', color: '#94a3b8' }}>
-                Fill in the details to create a new invoice
-              </p>
-            </div>
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Create Invoice
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Fill in the details to create a new invoice
+            </motion.p>
           </div>
           <motion.button
             onClick={() => navigate('/dashboard/invoices')}
-            style={{
-              padding: '0.75rem',
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '0.75rem',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            whileHover={{ scale: 1.05, background: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}
+            className="elegant-btn elegant-btn-secondary"
+            style={{ padding: '0.75rem' }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            whileHover={{ y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <X style={{ width: '20px', height: '20px' }} />
+            <X size={20} />
           </motion.button>
         </div>
       </motion.div>
 
       {/* Form */}
       <motion.div
+        className="elegant-card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        style={{
-          background: 'rgba(30, 41, 59, 0.5)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          borderRadius: '1.5rem',
-          padding: '2rem'
-        }}
+        transition={{ duration: 0.6, delay: 0.2 }}
       >
         {error && (
           <motion.div

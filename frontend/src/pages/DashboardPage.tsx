@@ -15,6 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 import { invoiceApi } from '../lib/api';
+import '../styles/elegant-theme.css';
 
 interface Invoice {
   _id: string;
@@ -142,142 +143,76 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-        }}
-      >
+      <div className="elegant-loading">
         <motion.div
-          style={{ position: 'relative' }}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-            style={{
-              width: '64px',
-              height: '64px',
-              border: '4px solid rgba(139, 92, 246, 0.3)',
-              borderTopColor: '#8b5cf6',
-              borderRadius: '50%',
-            }}
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Sparkles style={{ width: '24px', height: '24px', color: '#a78bfa' }} />
-          </motion.div>
-        </motion.div>
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-        padding: '2rem',
-      }}
-    >
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          style={{ position: 'relative', marginBottom: '2rem' }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '-1rem',
-              left: '-1rem',
-              width: '288px',
-              height: '288px',
-              background: 'rgba(139, 92, 246, 0.15)',
-              borderRadius: '50%',
-              filter: 'blur(60px)',
-              zIndex: 0,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '-2rem',
-              right: '5rem',
-              width: '384px',
-              height: '384px',
-              background: 'rgba(245, 158, 11, 0.08)',
-              borderRadius: '50%',
-              filter: 'blur(60px)',
-              zIndex: 0,
-            }}
-          />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
+    <div className="elegant-page">
+      {/* Header */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="elegant-header-content">
+          <div className="elegant-header-text">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 padding: '0.5rem 1rem',
-                background: 'rgba(30, 41, 59, 0.9)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(139, 92, 246, 0.1)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
                 borderRadius: '9999px',
-                border: '1px solid rgba(139, 92, 246, 0.2)',
                 marginBottom: '1rem',
               }}
             >
-              <Sparkles style={{ width: '16px', height: '16px', color: '#a78bfa' }} />
+              <Sparkles size={16} style={{ color: '#a78bfa' }} />
               <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#c4b5fd' }}>Welcome back</span>
             </motion.div>
 
-            <h1
-              style={{
-                fontSize: '3.75rem',
-                fontWeight: 700,
-                marginBottom: '0.75rem',
-                background: 'linear-gradient(90deg, #f1f5f9 0%, #8b5cf6 50%, #f1f5f9 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
               Dashboard
-            </h1>
-            <p style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: 300 }}>
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
               Your invoice management overview
-            </p>
+            </motion.p>
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
 
-        {/* Stats Cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '2rem',
-          }}
-        >
-          {statusCards.map((card, index) => {
+      {/* Stats Cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '1.5rem',
+          marginBottom: '2rem',
+        }}
+      >
+        {statusCards.map((card, index) => {
             const Icon = card.icon;
             return (
               <motion.div
@@ -677,7 +612,6 @@ export default function DashboardPage() {
             )}
           </motion.div>
         </div>
-      </div>
     </div>
   );
 }

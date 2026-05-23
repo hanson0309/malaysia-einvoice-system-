@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Plus, X, Filter } from 'lucide-react';
+import { Calendar, Plus, X, Filter, Search } from 'lucide-react';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
+import '../styles/elegant-theme.css';
 
 interface ServiceItem {
   description: string;
@@ -33,6 +34,7 @@ export default function POSAppointmentsPage() {
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form state
   const [customerId, setCustomerId] = useState('');
@@ -114,7 +116,11 @@ export default function POSAppointmentsPage() {
 
   const updateServiceItem = (index: number, field: 'description' | 'price', value: string | number) => {
     const updated = [...serviceItems];
-    updated[index][field] = value as any;
+    if (field === 'description') {
+      updated[index][field] = value as string;
+    } else {
+      updated[index][field] = value as number;
+    }
     setServiceItems(updated);
   };
 
@@ -133,85 +139,99 @@ export default function POSAppointmentsPage() {
     }
   };
 
-  return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
-            POS Appointments
-          </h1>
-          <p style={{ color: '#94a3b8' }}>Manage service appointments and bookings</p>
-        </div>
-        <motion.button
-          onClick={() => setShowModal(true)}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Plus style={{ width: '20px', height: '20px' }} />
-          New Appointment
-        </motion.button>
-      </div>
+  const filteredAppointments = appointments.filter((appointment) => {
+    const matchesSearch =
+      appointment.customer_id.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      appointment.service_type.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
 
-      {/* Filters */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        borderRadius: '1rem',
-        border: '1px solid rgba(139, 92, 246, 0.3)',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
-              Date
-            </label>
+  if (isLoading) {
+    return (
+      <div className="elegant-loading">
+        <motion.div
+          className="elegant-spinner"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="elegant-page">
+      {/* Header Section */}
+      <motion.div
+        className="elegant-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="header-content">
+          <div className="header-text">
+            <motion.h1
+              className="elegant-title"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              POS Appointments
+            </motion.h1>
+            <motion.p
+              className="elegant-subtitle"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {filteredAppointments.length} {filteredAppointments.length === 1 ? 'appointment' : 'appointments'} scheduled
+            </motion.p>
+          </div>
+
+          <motion.button
+            onClick={() => setShowModal(true)}
+            className="elegant-btn elegant-btn-primary"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span>New Appointment</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Toolbar Section */}
+      <motion.div
+        className="elegant-toolbar"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="elegant-search-container">
+          <Search className="search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search by customer or service type..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="elegant-search-input"
+          />
+        </div>
+
+        <div className="toolbar-actions">
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(15, 23, 42, 0.5)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                color: '#f1f5f9',
-                fontSize: '1rem',
-                outline: 'none',
-              }}
+              className="elegant-date-input"
             />
-          </div>
-          <div>
-            <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>
-              Status
-            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(15, 23, 42, 0.5)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                color: '#f1f5f9',
-                fontSize: '1rem',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
+              className="elegant-select"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -219,142 +239,144 @@ export default function POSAppointmentsPage() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+            <motion.button
+              onClick={loadAppointments}
+              className="elegant-btn elegant-btn-secondary"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Filter size={16} />
+              <span>Apply</span>
+            </motion.button>
           </div>
         </div>
-        <motion.button
-          onClick={loadAppointments}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Filter style={{ width: '20px', height: '20px' }} />
-          Apply Filters
-        </motion.button>
-      </div>
+      </motion.div>
 
-      {/* Loading state */}
-      {isLoading && <div style={{ textAlign: 'center', color: '#94a3b8' }}>Loading...</div>}
+      {/* Appointments Table */}
+      <AnimatePresence mode="wait">
+        {filteredAppointments.length === 0 ? (
+          <motion.div
+            className="elegant-empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="empty-icon">📅</div>
+            <h3>No appointments found</h3>
+            <p>Start by creating your first appointment</p>
+          </motion.div>
+        ) : (
+          <motion.div
+            className="elegant-table-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <table className="elegant-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Service Type</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Services</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAppointments.map((appointment, index) => {
+                  const statusColor = getStatusColor(appointment.status);
+                  const totalPrice = appointment.service_items.reduce((sum, item) => sum + item.price, 0);
 
-      {/* Appointments list */}
-      {!isLoading && appointments.length > 0 && (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {appointments.map((appointment, index) => {
-            const statusColor = getStatusColor(appointment.status);
-            const totalPrice = appointment.service_items.reduce((sum, item) => sum + item.price, 0);
-
-            return (
-              <motion.div
-                key={appointment._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                style={{
-                  background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                  borderRadius: '1rem',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  padding: '1.5rem',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{
-                      width: '50px',
-                      height: '50px',
-                      borderRadius: '0.75rem',
-                      background: 'rgba(139, 92, 246, 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <Calendar style={{ width: '24px', height: '24px', color: '#8b5cf6' }} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '0.25rem' }}>
-                        {appointment.service_type}
-                      </h3>
-                      <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-                        {appointment.customer_id.name} • {appointment.customer_id.phone || appointment.customer_id.email}
-                      </p>
-                    </div>
-                  </div>
-                  <span style={{
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    background: statusColor.bg,
-                    border: `1px solid ${statusColor.border}`,
-                    color: statusColor.text,
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                  }}>
-                    {appointment.status}
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Date</p>
-                    <p style={{ color: '#f1f5f9', fontWeight: 500 }}>
-                      {new Date(appointment.appointment_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Time</p>
-                    <p style={{ color: '#f1f5f9', fontWeight: 500 }}>
-                      {appointment.start_time} - {appointment.end_time}
-                    </p>
-                  </div>
-                  <div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Total Price</p>
-                    <p style={{ color: '#10b981', fontWeight: 600, fontSize: '1.125rem' }}>
-                      RM {totalPrice.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
-                {appointment.service_items.length > 0 && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Services</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {appointment.service_items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'rgba(15, 23, 42, 0.5)', borderRadius: '0.5rem' }}>
-                          <span style={{ color: '#f1f5f9' }}>{item.description}</span>
-                          <span style={{ color: '#10b981', fontWeight: 600 }}>RM {item.price.toFixed(2)}</span>
+                  return (
+                    <motion.tr
+                      key={appointment._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
+                    >
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '0.5rem',
+                            background: 'rgba(139, 92, 246, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            <Calendar size={20} style={{ color: '#8b5cf6' }} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                              {appointment.customer_id.name}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                              {appointment.customer_id.phone || appointment.customer_id.email}
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {appointment.notes && (
-                  <div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Notes</p>
-                    <p style={{ color: '#f1f5f9', fontSize: '0.875rem' }}>{appointment.notes}</p>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && appointments.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '4rem' }}>
-          No appointments found. Create your first appointment to get started.
-        </div>
-      )}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 500, color: '#f1f5f9' }}>
+                          {appointment.service_type}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ color: '#f1f5f9' }}>
+                          {new Date(appointment.appointment_date).toLocaleDateString('en-MY', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ color: '#f1f5f9' }}>
+                          {appointment.start_time} - {appointment.end_time}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ color: '#10b981', fontWeight: 600, fontSize: '1rem' }}>
+                          RM {totalPrice.toFixed(2)}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{
+                          padding: '0.375rem 0.75rem',
+                          borderRadius: '9999px',
+                          background: statusColor.bg,
+                          border: `1px solid ${statusColor.border}`,
+                          color: statusColor.text,
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          textTransform: 'capitalize',
+                          display: 'inline-block',
+                        }}>
+                          {appointment.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                          {appointment.service_items.length} {appointment.service_items.length === 1 ? 'item' : 'items'}
+                          {appointment.notes && (
+                            <div style={{ marginTop: '0.25rem', fontStyle: 'italic' }}>
+                              {appointment.notes.length > 30 ? appointment.notes.substring(0, 30) + '...' : appointment.notes}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Create Appointment Modal */}
       <AnimatePresence>
