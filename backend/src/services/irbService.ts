@@ -48,18 +48,6 @@ class IRBService {
    * 获取 OAuth access token
    */
   async getToken(clientId: string, clientSecret: string): Promise<string> {
-    console.log('[IRB getToken] ========== TOKEN REQUEST ==========');
-    console.log('[IRB getToken] baseUrl:', this.baseUrl);
-    console.log('[IRB getToken] tokenUrl:', `${this.baseUrl}/connect/token`);
-    console.log('[IRB getToken] clientId:', clientId);
-    console.log('[IRB getToken] clientId length:', clientId?.length);
-    console.log('[IRB getToken] clientSecret length:', clientSecret?.length);
-    console.log('[IRB getToken] clientSecret first6:', clientSecret?.slice(0, 6));
-    console.log('[IRB getToken] clientSecret last4:', clientSecret?.slice(-4));
-    console.log('[IRB getToken] clientId charCodes (first10):', [...(clientId || '').slice(0, 10)].map(c => c.charCodeAt(0)));
-    console.log('[IRB getToken] clientSecret charCodes (first5):', [...(clientSecret || '').slice(0, 5)].map(c => c.charCodeAt(0)));
-    console.log('[IRB getToken] clientSecret charCodes (last5):', [...(clientSecret || '').slice(-5)].map(c => c.charCodeAt(0)));
-    console.log('[IRB getToken] ====================================');
     try {
       const response = await axios.post(
         `${this.baseUrl}/connect/token`,
