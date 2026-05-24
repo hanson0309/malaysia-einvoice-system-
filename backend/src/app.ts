@@ -11,11 +11,14 @@ export const app = express();
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      config.FRONTEND_URL,
-    ].filter(Boolean);
-    // 允许所有 localhost 和 127.0.0.1 的请求（支持 Flutter Web 随机端口）
-    if (!origin || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin) || allowedOrigins.includes(origin)) {
+    const allowedOrigins = (config.FRONTEND_URL || '')
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean);
+    const isLocalhost = !origin || /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+    const isAllowed = allowedOrigins.includes(origin ?? '');
+    const isVercelPreview = /^https:\/\/.*\.vercel\.app$/.test(origin ?? '');
+    if (isLocalhost || isAllowed || isVercelPreview) {
       callback(null, true);
     } else {
       callback(null, false);
