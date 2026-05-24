@@ -204,16 +204,6 @@ export default function InvoicesPage() {
     return matchesSearch && matchesStatus && matchesSource;
   });
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      draft: { bg: 'rgba(148, 163, 184, 0.2)', text: '#94a3b8', border: 'rgba(148, 163, 184, 0.3)' },
-      submitted: { bg: 'rgba(59, 130, 246, 0.2)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
-      validated: { bg: 'rgba(16, 185, 129, 0.2)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
-      rejected: { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' }
-    };
-    return colors[status as keyof typeof colors] || colors.draft;
-  };
-
   if (loading) {
     return (
       <div className="elegant-loading">

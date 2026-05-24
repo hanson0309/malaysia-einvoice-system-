@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Receipt, ExternalLink, Search } from 'lucide-react';
+import { Filter, Receipt, ExternalLink } from 'lucide-react';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';

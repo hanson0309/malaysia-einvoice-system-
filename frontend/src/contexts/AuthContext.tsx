@@ -6,6 +6,8 @@ interface User {
   id: string;
   email: string;
   tenantId: string;
+  company_name?: string;
+  createdAt?: string;
 }
 
 interface AuthContextType {

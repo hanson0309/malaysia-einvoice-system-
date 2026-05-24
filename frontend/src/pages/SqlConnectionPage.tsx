@@ -909,7 +909,7 @@ export default function SqlConnectionPage() {
                     {mapOpen[section.key] && (
                       <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
                         {section.fields.map((f) => (
-                          <MapRow key={f.k} label={f.label} required={'req' in f && f.req} hint={f.hint}
+                          <MapRow key={f.k} label={f.label} required={'req' in f && f.req} hint={'hint' in f ? (f as any).hint : undefined}
                             value={(form.column_mapping[section.key] as any)[f.k] || ''}
                             onChange={(v) => setMap(section.key, f.k, v)} />
                         ))}

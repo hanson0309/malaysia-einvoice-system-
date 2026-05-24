@@ -180,18 +180,6 @@ export default function POSDevicesPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgba(16, 185, 129, 0.3)', text: '#10b981' };
-      case 'pending':
-        return { bg: 'rgba(251, 191, 36, 0.2)', border: 'rgba(251, 191, 36, 0.3)', text: '#fbbf24' };
-      case 'inactive':
-        return { bg: 'rgba(148, 163, 184, 0.2)', border: 'rgba(148, 163, 184, 0.3)', text: '#94a3b8' };
-      default:
-        return { bg: 'rgba(148, 163, 184, 0.2)', border: 'rgba(148, 163, 184, 0.3)', text: '#94a3b8' };
-    }
-  };
 
   const filteredDevices = devices.filter((device) =>
     device.device_name.toLowerCase().includes(searchQuery.toLowerCase()) ||

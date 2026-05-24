@@ -117,31 +117,6 @@ export default function SettingsPage() {
     }
   }, [progress, running]);
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: '0.875rem',
-    color: '#cbd5e1',
-    fontWeight: 500,
-    marginBottom: '0.25rem',
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '0.5rem 0.75rem',
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(148, 163, 184, 0.2)',
-    borderRadius: '0.5rem',
-    color: '#f1f5f9',
-    fontSize: '0.875rem',
-  };
-
-  const cardStyle: React.CSSProperties = {
-    background: 'rgba(30, 41, 59, 0.6)',
-    border: '1px solid rgba(148, 163, 184, 0.15)',
-    borderRadius: '1rem',
-    padding: '1.5rem',
-    backdropFilter: 'blur(10px)',
-  };
-
   return (
     <div className="elegant-page">
       <motion.div

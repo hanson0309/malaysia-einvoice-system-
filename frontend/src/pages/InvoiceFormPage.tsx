@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, FileText, X, RefreshCw, Save, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, X, RefreshCw, Save, FolderOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { invoiceApi, customerApi, productApi, invoiceTemplateApi } from '../lib/api';
@@ -12,7 +12,7 @@ interface LineItem {
   description: string;
   quantity: number;
   unit_price: number;
-  tax_type: 'SST' | 'E' | 'Z' | 'SR';
+  tax_type: 'SST' | 'E' | 'Z' | 'SR' | 'EXEMPT' | 'OE';
   tax_rate: number;
   amount: number;
 }
@@ -187,7 +187,7 @@ export default function InvoiceFormPage() {
       description: item.description,
       quantity: item.quantity,
       unit_price: item.unit_price,
-      tax_type: item.tax_type as 'SST' | 'E' | 'Z' | 'SR',
+      tax_type: item.tax_type as 'SST' | 'E' | 'Z' | 'SR' | 'EXEMPT' | 'OE',
       tax_rate: item.tax_rate,
       amount: item.quantity * item.unit_price
     })));
