@@ -6,8 +6,10 @@ import { sendInvoiceRateLimiter } from '../middleware/rateLimiter';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { invoiceQueue } from '../config/queue';
 import { logger } from '../utils/logger';
-import { Invoice, Customer, InvoiceSending, Tenant, Product, PosInventoryLog } from '../models';
+import { Invoice, Customer, InvoiceSending, Tenant, Product, PosInventoryLog, ReceiptClaim } from '../models';
+import { buildReceiptClaimUrl } from '../utils/receiptClaimUrl';
 import { PDFService } from '../services/pdfService';
+import { getNextDocumentNumber } from '../utils/documentNumber';
 import { EmailService } from '../services/EmailService';
 import { WhatsAppService } from '../services/WhatsAppService';
 import mongoose from 'mongoose';
@@ -296,19 +298,11 @@ router.post('/', async (req: AuthRequest, res, next) => {
 
 router.get('/next-number', async (req: AuthRequest, res, next) => {
   try {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const prefix = `INV-${year}${month}-`;
-
-    const count = await Invoice.countDocuments({
-      tenant_id: req.tenantId,
-      invoice_number: { $regex: `^INV-${year}${month}-` },
-      deleted_at: null,
+    const invoice_number = await getNextDocumentNumber(req.tenantId!);
+    res.json({
+      invoice_number,
+      transaction_number: invoice_number,
     });
-
-    const nextNum = String(count + 1).padStart(4, '0');
-    res.json({ invoice_number: `${prefix}${nextNum}` });
   } catch (error) {
     next(error);
   }
@@ -377,10 +371,19 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
       throw new NotFoundError('Invoice not found');
     }
 
-    // Transform the response to match frontend expectations
     const invoiceData: any = invoice.toObject();
     invoiceData.customer = invoiceData.customer_id;
     delete invoiceData.customer_id;
+
+    if (invoice.source === 'pos') {
+      const claim = await ReceiptClaim.findOne({ invoice_id: invoice._id }).sort({
+        created_at: -1,
+      });
+      const tenantId = invoice.tenant_id.toString();
+      invoiceData.claim_submitted = !!claim && ['submitted', 'processing'].includes(claim.status);
+      invoiceData.claim_status = claim?.status;
+      invoiceData.claim_url = buildReceiptClaimUrl(invoice.invoice_number, tenantId);
+    }
 
     res.json(invoiceData);
   } catch (error) {

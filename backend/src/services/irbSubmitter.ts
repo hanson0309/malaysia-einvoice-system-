@@ -65,6 +65,129 @@ export function resolveIRBCredentials(tenant: ITenant): { clientId: string; clie
   return envCreds;
 }
 
+const GENERAL_PUBLIC_TIN = 'EI00000000010';
+
+export async function resolveCustomerTinFromLhdn(
+  customer: { id_type?: string; registration_no?: string; tin_number?: string },
+  accessToken: string
+): Promise<string> {
+  const existing = customer.tin_number?.trim();
+  if (existing && existing !== GENERAL_PUBLIC_TIN) {
+    return existing;
+  }
+
+  const regNo = String(customer.registration_no || '').replace(/-/g, '');
+  if (!regNo || regNo === 'NA') {
+    return existing || GENERAL_PUBLIC_TIN;
+  }
+
+  if (customer.id_type === 'BRN') {
+    return existing || GENERAL_PUBLIC_TIN;
+  }
+
+  return irbService.getTinByNric(regNo, accessToken);
+}
+
+function hasClaimedBuyer(customer: any): boolean {
+  return !!(
+    customer &&
+    typeof customer === 'object' &&
+    customer.name &&
+    customer.registration_no &&
+    customer.registration_no !== 'NA'
+  );
+}
+
+function toCountryCode(code?: string): string {
+  if (!code || code === 'MY') return 'MYS';
+  return code;
+}
+
+/** Match eInvoicePortal getAccountingCustomerParty field order and IDs. */
+function buildAccountingCustomerParty(invoice: any, tenant: any) {
+  const customer = invoice.customer_id;
+  if (hasClaimedBuyer(customer)) {
+    const regNo = String(customer.registration_no || '').replace(/-/g, '');
+    const buyerTin = customer.tin_number || GENERAL_PUBLIC_TIN;
+    const partyIds: Array<{ ID: Array<{ _: string; schemeID: string }> }> = [
+      { ID: [{ _: buyerTin, schemeID: 'TIN' }] },
+    ];
+
+    if (customer.id_type === 'BRN' && regNo) {
+      partyIds.push({ ID: [{ _: regNo, schemeID: 'BRN' }] });
+    } else if (regNo) {
+      partyIds.push({ ID: [{ _: regNo, schemeID: 'NRIC' }] });
+    }
+
+    return [
+      {
+        Party: [
+          {
+            PostalAddress: [
+              {
+                CityName: [{ _: customer.city || 'NA' }],
+                PostalZone: [{ _: customer.postcode || '00000' }],
+                CountrySubentityCode: [{ _: customer.state_code || tenant.state_code || '14' }],
+                AddressLine: [
+                  { Line: [{ _: customer.address_line1 || 'NA' }] },
+                  { Line: [{ _: customer.address_line2 || '' }] },
+                ],
+                Country: [
+                  {
+                    IdentificationCode: [
+                      {
+                        _: toCountryCode(customer.country_code),
+                        listID: 'ISO3166-1',
+                        listAgencyID: '6',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            PartyLegalEntity: [{ RegistrationName: [{ _: customer.name }] }],
+            PartyIdentification: partyIds,
+            Contact: [
+              {
+                Telephone: [{ _: customer.phone || 'NA' }],
+                ElectronicMail: [{ _: customer.email || 'NA' }],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+  }
+
+  return [
+    {
+      Party: [
+        {
+          PartyIdentification: [
+            { ID: [{ _: 'EI00000000010', schemeID: 'TIN' }] },
+            { ID: [{ _: 'NA', schemeID: 'NRIC' }] },
+          ],
+          PartyLegalEntity: [{ RegistrationName: [{ _: 'General Public' }] }],
+          PostalAddress: [
+            {
+              CityName: [{ _: 'NA' }],
+              PostalZone: [{ _: '00000' }],
+              CountrySubentityCode: [{ _: tenant.state_code || '14' }],
+              AddressLine: [{ Line: [{ _: 'NA' }] }],
+              Country: [
+                { IdentificationCode: [{ _: 'MYS', listID: '3166-1', listAgencyID: 'ISO' }] },
+              ],
+            },
+          ],
+          Contact: [
+            { Telephone: [{ _: 'NA' }], ElectronicMail: [{ _: 'NA' }] },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
 /**
  * Build IRB invoice document in UBL 2.1 JSON format for MyInvois.
  * Extracted so both the HTTP route and the auto-consolidation job can reuse it.
@@ -72,10 +195,14 @@ export function resolveIRBCredentials(tenant: ITenant): { clientId: string; clie
 export function buildIRBDocument(invoice: any, tenant: any): any {
   const supplierIdScheme = tenant.type === 1 ? 'NRIC' : 'BRN';
   const supplierIdValue = String(tenant.company_registration_no || '').replace(/-/g, '');
+  const customer = invoice.customer_id;
+  const claimedBuyer = hasClaimedBuyer(customer);
+  // Portal uses 022 for individual buyer claims, 004 only for consolidated general public.
+  const itemClassCode = claimedBuyer ? '022' : '004';
 
   const invoiceDate = new Date(invoice.issue_date);
   const issueDate = invoiceDate.toISOString().split('T')[0];
-  const issueTime = '00:00:00Z';
+  const issueTime = `${invoiceDate.toISOString().split('T')[1].split('.')[0]}Z`;
 
   return {
     _D: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
@@ -88,6 +215,7 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
         IssueTime: [{ _: issueTime }],
         InvoiceTypeCode: [{ _: invoice.invoice_type || '01', listVersionID: '1.0' }],
         DocumentCurrencyCode: [{ _: 'MYR' }],
+        TaxCurrencyCode: [{ _: 'MYR' }],
         Signature: [
           {
             ID: [{ _: 'urn:oasis:names:specification:ubl:signature:Invoice' }],
@@ -134,40 +262,7 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
             ],
           },
         ],
-        AccountingCustomerParty: [
-          {
-            Party: [
-              {
-                PartyIdentification: [
-                  { ID: [{ _: 'EI00000000010', schemeID: 'TIN' }] },
-                  { ID: [{ _: 'NA', schemeID: 'NRIC' }] },
-                ],
-                PartyLegalEntity: [
-                  { RegistrationName: [{ _: 'General Public' }] },
-                ],
-                PostalAddress: [
-                  {
-                    CityName: [{ _: 'NA' }],
-                    PostalZone: [{ _: '00000' }],
-                    CountrySubentityCode: [{ _: tenant.state_code || '14' }],
-                    AddressLine: [
-                      { Line: [{ _: 'NA' }] },
-                    ],
-                    Country: [
-                      { IdentificationCode: [{ _: 'MYS', listID: '3166-1', listAgencyID: 'ISO' }] },
-                    ],
-                  },
-                ],
-                Contact: [
-                  {
-                    Telephone: [{ _: 'NA' }],
-                    ElectronicMail: [{ _: 'NA' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
+        AccountingCustomerParty: buildAccountingCustomerParty(invoice, tenant),
         TaxTotal: [
           {
             TaxAmount: [{ _: Number(invoice.tax_amount.toFixed(2)), currencyID: 'MYR' }],
@@ -229,7 +324,7 @@ export function buildIRBDocument(invoice: any, tenant: any): any {
               CommodityClassification: [
                 {
                   ItemClassificationCode: [
-                    { _: item.classificationCode || '004', listID: 'CLASS' },
+                    { _: item.classificationCode || itemClassCode, listID: 'CLASS' },
                   ],
                 },
               ],
@@ -732,16 +827,34 @@ export async function submitInvoiceToIRB(
     accessToken = await irbService.getToken(creds.clientId, creds.clientSecret);
   }
 
-  // Best-effort taxpayer validation (non-blocking)
-  try {
-    const idType = tenant.type === 1 ? 'NRIC' : 'BRN';
-    const idValue = String(tenant.company_registration_no || '').replace(/-/g, '');
-    await irbService.validateTaxpayer(idType, idValue, tenant.tin_number, accessToken);
-  } catch (e: any) {
-    console.warn('Taxpayer validation skipped:', e.message);
+  const customer = invoice.customer_id as any;
+  if (customer && typeof customer === 'object' && customer._id) {
+    const resolvedTin = await resolveCustomerTinFromLhdn(customer, accessToken);
+    if (resolvedTin && resolvedTin !== customer.tin_number) {
+      customer.tin_number = resolvedTin;
+      await customer.save();
+    }
+    if (
+      customer.id_type !== 'BRN' &&
+      (!customer.tin_number || customer.tin_number === GENERAL_PUBLIC_TIN)
+    ) {
+      return {
+        success: false,
+        invoiceId,
+        invoiceNumber: invoice.invoice_number,
+        error:
+          'Could not resolve buyer TIN from LHDN for this IC/NRIC. Please verify the IC is registered for e-Invoice.',
+      };
+    }
   }
 
   const irbDocument = buildIRBDocument(invoice, tenant);
+  console.log('[IRB] Submitting document', {
+    invoiceNumber: invoice.invoice_number,
+    buyerTin: customer?.tin_number,
+    buyerId: customer?.registration_no,
+    itemClassCode: hasClaimedBuyer(customer) ? '022' : '004',
+  });
 
   try {
     const result = await irbService.submitDocument(

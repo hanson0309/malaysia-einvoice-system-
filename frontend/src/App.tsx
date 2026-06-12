@@ -22,6 +22,7 @@ import POSAppointmentsPage from './pages/POSAppointmentsPage';
 import POSEmployeesPage from './pages/POSEmployeesPage';
 import POSSettingsPage from './pages/POSSettingsPage';
 import SqlConnectionPage from './pages/SqlConnectionPage';
+import ReceiptClaimPage from './pages/ReceiptClaimPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/receipt/:receiptNo" element={<ReceiptClaimPage />} />
 
           <Route
             path="/dashboard"

@@ -79,7 +79,7 @@ function MapRow({
 // ─── Env flag ──────────────────────────────────────────────────────────────
 // true  = dev server (npm run dev) → show testing helpers, allow no-password
 // false = production build         → require username + password, hide test tips
-const SQL_DEBUG = true;
+const SQL_DEBUG = false;
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 

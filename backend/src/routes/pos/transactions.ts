@@ -4,11 +4,25 @@ import { authenticateJWT, AuthRequest } from '../../middleware/auth';
 import { extractTenant } from '../../middleware/tenant';
 import { ValidationError, NotFoundError } from '../../utils/errors';
 import { PosTransaction, Invoice } from '../../models';
+import { getNextDocumentNumber } from '../../utils/documentNumber';
 
 const router = Router();
 
 router.use(authenticateJWT);
 router.use(extractTenant);
+
+/** Next receipt / invoice number (same INV sequence as manual invoices). */
+router.get('/next-number', async (req: AuthRequest, res, next) => {
+  try {
+    const transaction_number = await getNextDocumentNumber(req.tenantId!);
+    res.json({
+      transaction_number,
+      invoice_number: transaction_number,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 const transactionItemSchema = z.object({
   product_id: z.string().optional(),
